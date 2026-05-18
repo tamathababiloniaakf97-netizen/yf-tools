@@ -1,26 +1,142 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+body {
+  background-color: #f5f5f5;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+.ant-table-wrapper {
+  overflow-x: auto;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* ======== 策略执行页面 ======== */
+.yf-execution-columns {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.yf-execution-column {
+  scrollbar-width: thin;
+  scrollbar-color: #d9d9d9 transparent;
+}
+
+.yf-symbol-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.yf-symbol-info-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.yf-risk-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+
+.yf-risk-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 响应式：中屏两列 */
+@media (max-width: 1439px) and (min-width: 1024px) {
+  .yf-execution-columns {
+    flex-wrap: wrap;
+  }
+  .yf-execution-column {
+    flex: 1 1 calc(50% - 8px) !important;
+    min-width: 300px !important;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* 响应式：小屏单列 */
+@media (max-width: 1023px) {
+  .yf-execution-columns {
+    flex-direction: column;
+  }
+  .yf-execution-column {
+    flex: 1 1 100% !important;
+    min-width: 100% !important;
+    max-height: none !important;
+  }
+}
+
+/* ======== 打印样式 ======== */
+@media print {
+  /* 解除 body / main 的高度约束，允许多页内容自然流出 */
+  html, body {
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+  }
+  body {
+    display: block !important;
+  }
+  .yf-main-content {
+    flex: none !important;
+    max-width: none !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* 隐藏导航栏和非内容元素 */
+  .yf-navbar,
+  .yf-left-panel,
+  .yf-page-title,
+  .yf-print-hide {
+    display: none !important;
+  }
+
+  /* 执行页面打印：三列变单列 */
+  .yf-execution-columns {
+    flex-direction: column !important;
+  }
+  .yf-execution-column {
+    flex: 1 1 100% !important;
+    min-width: 100% !important;
+    max-height: none !important;
+    overflow: visible !important;
+    page-break-inside: avoid;
+  }
+
+  /* 右栏全宽，去掉高度限制 */
+  .yf-right-panel {
+    flex: 1 1 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    position: static !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  /* 保证表格不溢出 */
+  .ant-table {
+    font-size: 10px !important;
+  }
+  .ant-table-cell {
+    padding: 4px 6px !important;
+    line-height: 1.3 !important;
+  }
+
+  /* Card 间距收紧 */
+  .ant-card {
+    margin-bottom: 6px !important;
+    page-break-inside: avoid;
+  }
+
+  body {
+    background: #fff;
+    font-size: 12px;
+  }
+
+  @page {
+    margin: 12mm;
+    size: A4;
+  }
 }
