@@ -301,6 +301,7 @@ export interface EvidenceRecord extends EvidenceInput {
 
 export interface InvestmentReviewInput {
   ticker_id?: string | null;
+  decision_id?: string | null;
   asset_name: string;
   review_date: string;
   decision_type: InvestmentReviewDecisionType;
