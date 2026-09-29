@@ -10,6 +10,7 @@ const kindLabels: Record<DueReminderKind, string> = {
   overdue: '已延期', due_today: '今天到期', scheduled: '提醒时间已到', recurring: '周期提醒',
   relationship_overdue: '联系已延期', relationship_today: '今天联系',
   birthday_upcoming: '生日将近', birthday_today: '今天生日',
+  investment_task_overdue: '投资待办已延期', investment_task_today: '今天检查',
 };
 
 export default function ReminderCenter({ enabled }: { enabled: boolean }) {

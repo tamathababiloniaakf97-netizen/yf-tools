@@ -39,6 +39,6 @@ describe('due reminders', () => {
     const result = buildDueReminders([
       plan({ id: 'weekly', start_date: '2026-09-21', recurrence_rule: 'weekly' }),
     ], now);
-    expect(result[0]).toMatchObject({ subject_id: 'weekly', kind: 'recurring', href: '/investment/tasks' });
+    expect(result[0]).toMatchObject({ subject_id: 'weekly', kind: 'recurring', href: '/plans' });
   });
 });
