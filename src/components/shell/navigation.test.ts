@@ -36,4 +36,11 @@ describe('lifeOsNavigation', () => {
     expect(children.find((item) => item.key === 'investment-reviews')).toMatchObject({ disabled: false, phase: 'now' });
     expect(children.find((item) => item.key === 'methodology')).toMatchObject({ disabled: false, phase: 'now' });
   });
+
+  it('makes investment decisions available next to company research', () => {
+    const investment = lifeOsNavigation.find((item) => item.key === 'investment');
+    expect(investment?.children?.find((item) => item.key === 'investment-decisions')).toMatchObject({
+      label: '投资决策', href: '/investment/decisions', disabled: false, phase: 'now',
+    });
+  });
 });

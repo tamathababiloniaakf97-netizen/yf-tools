@@ -20,6 +20,7 @@ export const lifeOsNavigation: NavigationItem[] = [
       { key: 'holdings', label: '持仓', href: '/cost', icon: 'holdings' },
       { key: 'watchlist', label: '观察列表', href: '/investment/watchlist', icon: 'watchlist' },
       { key: 'research', label: '公司研究', href: '/investment/research', icon: 'research' },
+      { key: 'investment-decisions', label: '投资决策', href: '/investment/decisions', icon: 'research', disabled: false, phase: 'now' },
       { key: 'investment-tasks', label: '投资待办', href: '/investment/tasks', icon: 'tasks', disabled: false, phase: 'now' },
       { key: 'investment-reviews', label: '投资复盘', href: '/investment/reviews', icon: 'reviews', disabled: false, phase: 'now' },
       { key: 'methodology', label: '方法论', href: '/investment/methodology', icon: 'methodology', disabled: false, phase: 'now' },
