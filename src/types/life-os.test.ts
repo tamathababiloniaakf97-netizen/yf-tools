@@ -3,6 +3,8 @@ import {
   birthdayCalendars,
   goalTypes,
   interactionTypes,
+  investmentDecisionStatuses,
+  investmentDecisionTypes,
   investmentTaskStatuses,
   investmentTaskTypes,
   planDomains,
@@ -14,6 +16,7 @@ import {
   type ContactInteraction,
   type Goal,
   type InvestmentTask,
+  type ResearchProfileInput,
 } from './life-os';
 
 describe('Life OS domain values', () => {
@@ -82,5 +85,20 @@ describe('Life OS domain values', () => {
       created_at: '2026-09-29T00:00:00Z', updated_at: '2026-09-29T00:00:00Z',
     };
     expect(task.asset_name).toBe('腾讯');
+  });
+
+  it('defines structured research and investment decision contracts', () => {
+    expect(investmentDecisionStatuses).toEqual(['draft', 'finalized']);
+    expect(investmentDecisionTypes).toEqual(['buy', 'add', 'hold', 'reduce', 'sell', 'watch', 'skip']);
+    const profile: ResearchProfileInput = {
+      asset_name: '腾讯',
+      business_model: '社交与内容生态变现',
+      customer_value: '用户关系链与商家触达',
+      competitive_advantage: '关系链与规模',
+      long_term_assumptions: '用户与商业化保持平衡',
+      invalidation_conditions: '关系链显著迁移',
+      earnings_quality: '经营现金流长期覆盖利润',
+    };
+    expect(profile.asset_name).toBe('腾讯');
   });
 });

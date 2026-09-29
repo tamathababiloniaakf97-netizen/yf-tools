@@ -17,6 +17,10 @@ export const birthdayCalendars = ['solar', 'lunar'] as const;
 export const interactionTypes = ['contact', 'gift_given', 'gift_received', 'advice_received', 'advice_given', 'help_received', 'help_given', 'other'] as const;
 export const investmentTaskTypes = ['price', 'research', 'validation', 'financial_report', 'other'] as const;
 export const investmentTaskStatuses = ['pending', 'waiting', 'completed', 'cancelled'] as const;
+export const investmentDecisionStatuses = ['draft', 'finalized'] as const;
+export const investmentDecisionTypes = ['buy', 'add', 'hold', 'reduce', 'sell', 'watch', 'skip'] as const;
+export const researchHypothesisStatuses = ['unverified', 'supported', 'challenged', 'inconclusive'] as const;
+export const researchChecklistStatuses = ['considered', 'not_applicable', 'needs_validation'] as const;
 
 export type PlanStatus = typeof planStatuses[number];
 export type PlanDomain = typeof planDomains[number];
@@ -29,6 +33,11 @@ export type BirthdayCalendar = typeof birthdayCalendars[number];
 export type InteractionType = typeof interactionTypes[number];
 export type InvestmentTaskType = typeof investmentTaskTypes[number];
 export type InvestmentTaskStatus = typeof investmentTaskStatuses[number];
+export type InvestmentDecisionStatus = typeof investmentDecisionStatuses[number];
+export type InvestmentDecisionType = typeof investmentDecisionTypes[number];
+export type InvestmentReviewDecisionType = 'buy' | 'sell' | 'hold' | 'skip';
+export type ResearchHypothesisStatus = typeof researchHypothesisStatuses[number];
+export type ResearchChecklistStatus = typeof researchChecklistStatuses[number];
 
 export interface Plan {
   id: string;
@@ -217,11 +226,65 @@ export interface ResearchProfile {
   current_judgment: string;
   risks: string;
   invalidation_conditions: string;
+  business_model: string;
+  customer_value: string;
+  competitive_advantage: string;
+  long_term_assumptions: string;
+  earnings_quality: string;
+  management_culture: string;
+  unknowns: string;
+  checklist_state: ResearchChecklistState;
   source_type: SourceType;
   source_ref: string | null;
   review_status: ReviewStatus;
   created_at: string;
   updated_at: string;
+}
+
+export interface ResearchChecklistItemState {
+  status: ResearchChecklistStatus;
+  note: string;
+}
+
+export type ResearchChecklistState = Record<string, ResearchChecklistItemState>;
+
+export type ResearchProfileInput = Pick<ResearchProfile, 'asset_name'> & Partial<Pick<ResearchProfile,
+  'ticker_id' | 'investment_thesis' | 'current_judgment' | 'risks' |
+  'invalidation_conditions' | 'business_model' | 'customer_value' |
+  'competitive_advantage' | 'long_term_assumptions' | 'earnings_quality' |
+  'management_culture' | 'unknowns' | 'checklist_state' | 'source_type' |
+  'source_ref' | 'review_status'
+>>;
+
+export interface ResearchHypothesis {
+  id: string;
+  user_id: string;
+  research_profile_id: string;
+  statement: string;
+  key_variables: string;
+  status: ResearchHypothesisStatus;
+  next_check_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type ResearchHypothesisInput = Pick<ResearchHypothesis, 'statement'> & Partial<Pick<ResearchHypothesis,
+  'key_variables' | 'status' | 'next_check_at'
+>>;
+
+export interface ResearchSnapshotData {
+  profile: ResearchProfile;
+  hypotheses: ResearchHypothesis[];
+}
+
+export interface ResearchSnapshot {
+  id: string;
+  user_id: string;
+  research_profile_id: string;
+  snapshot_version: number;
+  snapshot_data: ResearchSnapshotData;
+  evidence_snapshot: Array<Pick<EvidenceRecord, 'id' | 'content' | 'impact' | 'source_name' | 'source_url' | 'occurred_at' | 'hypothesis_id'>>;
+  created_at: string;
 }
 
 export interface EvidenceRecord extends EvidenceInput {
@@ -236,13 +299,11 @@ export interface EvidenceRecord extends EvidenceInput {
   created_at: string;
 }
 
-export type InvestmentDecisionType = 'buy' | 'sell' | 'hold' | 'skip';
-
 export interface InvestmentReviewInput {
   ticker_id?: string | null;
   asset_name: string;
   review_date: string;
-  decision_type: InvestmentDecisionType;
+  decision_type: InvestmentReviewDecisionType;
   original_reason: string;
   actual_result: string;
   correct_points?: string;
@@ -252,6 +313,40 @@ export interface InvestmentReviewInput {
   source_ref?: string | null;
   review_status?: ReviewStatus;
 }
+
+export interface InvestmentDecision {
+  id: string;
+  user_id: string;
+  research_profile_id: string;
+  research_snapshot_id: string | null;
+  asset_name: string;
+  status: InvestmentDecisionStatus;
+  market_expectation: string;
+  personal_divergence: string;
+  valuation_conclusion: string;
+  valuation_assumptions: string;
+  safety_margin: string;
+  investment_plan: string;
+  error_signals: string;
+  error_response: string;
+  do_not_list: string[];
+  decision_type: InvestmentDecisionType | null;
+  final_reason: string;
+  decision_date: string | null;
+  source_type: SourceType;
+  source_ref: string | null;
+  review_status: ReviewStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export type InvestmentDecisionInput = Pick<InvestmentDecision, 'research_profile_id' | 'asset_name'> & Partial<Pick<InvestmentDecision,
+  'research_snapshot_id' | 'status' | 'market_expectation' | 'personal_divergence' |
+  'valuation_conclusion' | 'valuation_assumptions' | 'safety_margin' |
+  'investment_plan' | 'error_signals' | 'error_response' | 'do_not_list' |
+  'decision_type' | 'final_reason' | 'decision_date' | 'source_type' |
+  'source_ref' | 'review_status'
+>>;
 
 export interface InvestmentReview extends InvestmentReviewInput {
   id: string;
