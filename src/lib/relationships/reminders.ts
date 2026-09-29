@@ -1,5 +1,6 @@
 import type { Contact } from '@/types/life-os';
 import type { DueReminder } from '@/lib/reminders/due-reminders';
+import { buildBirthdayReminders } from './birthdays';
 
 function shanghaiDate(date: Date) {
   const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(date);
@@ -14,4 +15,11 @@ export function buildRelationshipReminders(contacts: Contact[], now = new Date()
     kind: contact.next_contact_at! < today ? 'relationship_overdue' as const : 'relationship_today' as const,
     due_date: contact.next_contact_at, href: '/relationships',
   })).sort((a, b) => a.kind === b.kind ? a.title.localeCompare(b.title) : a.kind === 'relationship_overdue' ? -1 : 1);
+}
+
+export function buildAllRelationshipReminders(contacts: Contact[], now = new Date()): DueReminder[] {
+  return [
+    ...buildRelationshipReminders(contacts, now),
+    ...buildBirthdayReminders(contacts, now),
+  ];
 }

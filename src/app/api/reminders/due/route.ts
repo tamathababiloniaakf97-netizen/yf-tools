@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerSideClient } from '@/lib/supabase/server';
 import { buildDueReminders } from '@/lib/reminders/due-reminders';
-import { buildRelationshipReminders } from '@/lib/relationships/reminders';
+import { buildAllRelationshipReminders } from '@/lib/relationships/reminders';
 import type { Contact, Plan } from '@/types/life-os';
 
 export async function GET() {
@@ -16,6 +16,6 @@ export async function GET() {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json([
     ...buildDueReminders((plansResult.data ?? []) as Plan[]),
-    ...buildRelationshipReminders((contactsResult.data ?? []) as Contact[]),
+    ...buildAllRelationshipReminders((contactsResult.data ?? []) as Contact[]),
   ]);
 }
