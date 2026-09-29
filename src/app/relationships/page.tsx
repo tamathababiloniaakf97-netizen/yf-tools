@@ -44,7 +44,10 @@ export default function RelationshipsPage() {
     initialContactHandled.current = true;
     const id = new URLSearchParams(window.location.search).get('contact');
     const contact = contacts.find((item) => item.id === id);
-    if (contact) void loadHistory(contact);
+    if (contact) {
+      const timer = window.setTimeout(() => void loadHistory(contact), 0);
+      return () => window.clearTimeout(timer);
+    }
   }, [contacts, loadHistory]);
 
   const saveContact = async (input: ContactInput) => { setSaving(true); try { const response = await fetch(editing ? `/api/relationships/${editing.id}` : '/api/relationships', { method: editing ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input) }); const data = await response.json(); if (!response.ok) throw new Error(data.error || '保存失败'); message.success('联系人已保存'); setEditorOpen(false); setEditing(null); await load(); } catch (err) { message.error(err instanceof Error ? err.message : '保存失败'); } finally { setSaving(false); } };
