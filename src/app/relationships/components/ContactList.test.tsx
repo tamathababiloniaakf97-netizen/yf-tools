@@ -4,7 +4,7 @@ import type { Contact } from '@/types/life-os';
 import ContactList from './ContactList';
 
 function contact(id: string, overrides: Partial<Contact> = {}): Contact {
-  return { id, user_id: 'u1', name: id, relationship_type: 'friend', role: '', met_context: '', family_context: '', work_context: '', important_notes: '', last_contact_at: null, next_contact_at: null, next_action: '', notes: '', source_type: 'manual', source_ref: null, review_status: 'approved', created_at: '2026-09-01T00:00:00Z', updated_at: '2026-09-01T00:00:00Z', ...overrides };
+  return { id, user_id: 'u1', name: id, relationship_type: 'friend', role: '', met_context: '', family_context: '', work_context: '', important_notes: '', birthday_calendar: null, birthday_year: null, birthday_month: null, birthday_day: null, birthday_is_leap_month: false, birthday_reminder_enabled: true, last_contact_at: null, next_contact_at: null, next_action: '', notes: '', source_type: 'manual', source_ref: null, review_status: 'approved', created_at: '2026-09-01T00:00:00Z', updated_at: '2026-09-01T00:00:00Z', ...overrides };
 }
 
 describe('ContactList', () => {

@@ -3,7 +3,7 @@
 import { Button, Card, Empty, List, Space, Tag, Typography } from 'antd';
 import type { Contact } from '@/types/life-os';
 
-const labels = { family: '家庭', friend: '朋友', work: '工作', professional: '专业人士', other: '其他' } as const;
+const labels = { family: '家庭', friend: '朋友', classmate: '同学', work: '工作', professional: '专业人士', other: '其他' } as const;
 function ContactItems({ contacts, onEdit, onInteract }: { contacts: Contact[]; onEdit: (value: Contact) => void; onInteract: (value: Contact) => void }) {
   if (!contacts.length) return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无记录" />;
   return <List dataSource={contacts} renderItem={(contact) => <List.Item actions={[<Button key="record" size="small" onClick={() => onInteract(contact)}>记录联系</Button>, <Button key="edit" type="link" size="small" onClick={() => onEdit(contact)}>编辑</Button>]}><List.Item.Meta title={<Space>{contact.name}<Tag>{labels[contact.relationship_type]}</Tag></Space>} description={[contact.role, contact.work_context || contact.family_context, contact.next_action && `下一步：${contact.next_action}`, contact.next_contact_at && `下次联系：${contact.next_contact_at}`].filter(Boolean).join(' · ')} /></List.Item>} />;

@@ -12,7 +12,9 @@ export const planTypes = ['validation', 'research', 'trade', 'action', 'decision
 export const sourceTypes = ['manual', 'codex', 'automation', 'system'] as const;
 export const reviewStatuses = ['pending', 'approved', 'rejected'] as const;
 export const goalTypes = ['result', 'project', 'habit', 'direction'] as const;
-export const relationshipTypes = ['family', 'friend', 'work', 'professional', 'other'] as const;
+export const relationshipTypes = ['family', 'friend', 'classmate', 'work', 'professional', 'other'] as const;
+export const birthdayCalendars = ['solar', 'lunar'] as const;
+export const interactionTypes = ['contact', 'gift_given', 'gift_received', 'advice_received', 'advice_given', 'help_received', 'help_given', 'other'] as const;
 
 export type PlanStatus = typeof planStatuses[number];
 export type PlanDomain = typeof planDomains[number];
@@ -21,6 +23,8 @@ export type SourceType = typeof sourceTypes[number];
 export type ReviewStatus = typeof reviewStatuses[number];
 export type GoalType = typeof goalTypes[number];
 export type RelationshipType = typeof relationshipTypes[number];
+export type BirthdayCalendar = typeof birthdayCalendars[number];
+export type InteractionType = typeof interactionTypes[number];
 
 export interface Plan {
   id: string;
@@ -94,6 +98,12 @@ export interface Contact {
   family_context: string;
   work_context: string;
   important_notes: string;
+  birthday_calendar: BirthdayCalendar | null;
+  birthday_year: number | null;
+  birthday_month: number | null;
+  birthday_day: number | null;
+  birthday_is_leap_month: boolean;
+  birthday_reminder_enabled: boolean;
   last_contact_at: string | null;
   next_contact_at: string | null;
   next_action: string;
@@ -107,6 +117,8 @@ export interface Contact {
 
 export type ContactInput = Pick<Contact, 'name' | 'relationship_type'> & Partial<Pick<Contact,
   'role' | 'met_context' | 'family_context' | 'work_context' | 'important_notes' |
+  'birthday_calendar' | 'birthday_year' | 'birthday_month' | 'birthday_day' |
+  'birthday_is_leap_month' | 'birthday_reminder_enabled' |
   'last_contact_at' | 'next_contact_at' | 'next_action' | 'notes' | 'source_type' |
   'source_ref' | 'review_status'
 >>;
@@ -116,6 +128,7 @@ export interface ContactInteraction {
   user_id: string;
   contact_id: string;
   occurred_at: string;
+  interaction_type: InteractionType;
   summary: string;
   next_action: string;
   next_contact_at: string | null;
@@ -126,6 +139,7 @@ export interface ContactInteraction {
 }
 
 export type ContactInteractionInput = Pick<ContactInteraction, 'occurred_at' | 'summary'> & Partial<Pick<ContactInteraction,
+  'interaction_type' |
   'next_action' | 'next_contact_at' | 'source_type' | 'source_ref' | 'review_status'
 >>;
 

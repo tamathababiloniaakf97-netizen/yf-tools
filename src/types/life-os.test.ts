@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  birthdayCalendars,
   goalTypes,
+  interactionTypes,
   planDomains,
   planStatuses,
   planTypes,
@@ -42,19 +44,24 @@ describe('Life OS domain values', () => {
   });
 
   it('defines private relationship records and interaction history', () => {
-    expect(relationshipTypes).toEqual(['family', 'friend', 'work', 'professional', 'other']);
+    expect(relationshipTypes).toEqual(['family', 'friend', 'classmate', 'work', 'professional', 'other']);
+    expect(birthdayCalendars).toEqual(['solar', 'lunar']);
+    expect(interactionTypes).toContain('gift_given');
+    expect(interactionTypes).toContain('advice_received');
 
     const contact: Contact = {
       id: 'c1', user_id: 'u1', name: '王律师', relationship_type: 'professional',
       role: '律师', met_context: '朋友介绍', family_context: '', work_context: '',
       important_notes: '', last_contact_at: null, next_contact_at: '2026-10-10',
       next_action: '约一次深入交流', notes: '', source_type: 'manual', source_ref: null,
+      birthday_calendar: null, birthday_year: null, birthday_month: null,
+      birthday_day: null, birthday_is_leap_month: false, birthday_reminder_enabled: true,
       review_status: 'approved', created_at: '2026-09-28T00:00:00Z',
       updated_at: '2026-09-28T00:00:00Z',
     };
     const interaction: ContactInteraction = {
       id: 'i1', user_id: 'u1', contact_id: contact.id, occurred_at: '2026-10-01',
-      summary: '讨论企业合同风险', next_action: '发送资料', next_contact_at: '2026-10-10',
+      interaction_type: 'advice_received', summary: '讨论企业合同风险', next_action: '发送资料', next_contact_at: '2026-10-10',
       source_type: 'manual', source_ref: null, review_status: 'approved',
       created_at: '2026-10-01T00:00:00Z',
     };
