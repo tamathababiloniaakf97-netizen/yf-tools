@@ -3,6 +3,8 @@ import {
   birthdayCalendars,
   goalTypes,
   interactionTypes,
+  investmentTaskStatuses,
+  investmentTaskTypes,
   planDomains,
   planStatuses,
   planTypes,
@@ -11,6 +13,7 @@ import {
   type Contact,
   type ContactInteraction,
   type Goal,
+  type InvestmentTask,
 } from './life-os';
 
 describe('Life OS domain values', () => {
@@ -67,5 +70,17 @@ describe('Life OS domain values', () => {
     };
 
     expect(interaction.contact_id).toBe(contact.id);
+  });
+
+  it('defines standalone investment tasks', () => {
+    expect(investmentTaskTypes).toEqual(['price', 'research', 'validation', 'financial_report', 'other']);
+    expect(investmentTaskStatuses).toEqual(['pending', 'waiting', 'completed', 'cancelled']);
+    const task: InvestmentTask = {
+      id: 'it1', user_id: 'u1', asset_name: '腾讯', task_type: 'price', title: '320元附近重新评估',
+      condition_note: '检查估值和广告业务', reminder_date: '2026-10-10', status: 'pending', notes: '',
+      completed_at: null, source_type: 'manual', source_ref: null, review_status: 'approved',
+      created_at: '2026-09-29T00:00:00Z', updated_at: '2026-09-29T00:00:00Z',
+    };
+    expect(task.asset_name).toBe('腾讯');
   });
 });

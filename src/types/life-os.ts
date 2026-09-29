@@ -15,6 +15,8 @@ export const goalTypes = ['result', 'project', 'habit', 'direction'] as const;
 export const relationshipTypes = ['family', 'friend', 'classmate', 'work', 'professional', 'other'] as const;
 export const birthdayCalendars = ['solar', 'lunar'] as const;
 export const interactionTypes = ['contact', 'gift_given', 'gift_received', 'advice_received', 'advice_given', 'help_received', 'help_given', 'other'] as const;
+export const investmentTaskTypes = ['price', 'research', 'validation', 'financial_report', 'other'] as const;
+export const investmentTaskStatuses = ['pending', 'waiting', 'completed', 'cancelled'] as const;
 
 export type PlanStatus = typeof planStatuses[number];
 export type PlanDomain = typeof planDomains[number];
@@ -25,6 +27,8 @@ export type GoalType = typeof goalTypes[number];
 export type RelationshipType = typeof relationshipTypes[number];
 export type BirthdayCalendar = typeof birthdayCalendars[number];
 export type InteractionType = typeof interactionTypes[number];
+export type InvestmentTaskType = typeof investmentTaskTypes[number];
+export type InvestmentTaskStatus = typeof investmentTaskStatuses[number];
 
 export interface Plan {
   id: string;
@@ -141,6 +145,29 @@ export interface ContactInteraction {
 export type ContactInteractionInput = Pick<ContactInteraction, 'occurred_at' | 'summary'> & Partial<Pick<ContactInteraction,
   'interaction_type' |
   'next_action' | 'next_contact_at' | 'source_type' | 'source_ref' | 'review_status'
+>>;
+
+export interface InvestmentTask {
+  id: string;
+  user_id: string;
+  asset_name: string;
+  task_type: InvestmentTaskType;
+  title: string;
+  condition_note: string;
+  reminder_date: string | null;
+  status: InvestmentTaskStatus;
+  notes: string;
+  completed_at: string | null;
+  source_type: SourceType;
+  source_ref: string | null;
+  review_status: ReviewStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export type InvestmentTaskInput = Pick<InvestmentTask, 'task_type' | 'title'> & Partial<Pick<InvestmentTask,
+  'asset_name' | 'condition_note' | 'reminder_date' | 'status' | 'notes' | 'completed_at' |
+  'source_type' | 'source_ref' | 'review_status'
 >>;
 
 export type WatchStatus = 'watching' | 'near_condition' | 'validating' | 'paused';
