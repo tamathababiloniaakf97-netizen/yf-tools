@@ -1,6 +1,6 @@
 import type { Plan } from '@/types/life-os';
 
-export type DueReminderKind = 'overdue' | 'due_today' | 'scheduled' | 'recurring' | 'relationship_overdue' | 'relationship_today' | 'birthday_upcoming' | 'birthday_today' | 'investment_task_overdue' | 'investment_task_today';
+export type DueReminderKind = 'overdue' | 'due_today' | 'scheduled' | 'recurring' | 'relationship_overdue' | 'relationship_today' | 'relationship_holiday' | 'birthday_upcoming' | 'birthday_today' | 'investment_task_overdue' | 'investment_task_today';
 
 export interface DueReminder {
   id: string;
@@ -39,6 +39,6 @@ export function buildDueReminders(plans: Plan[], now = new Date()): DueReminder[
     if (kind) result.push({ id: `${plan.id}:${today}`, subject_type: 'plan', subject_id: plan.id, title: plan.title, kind, due_date: plan.due_date, href: '/plans' });
   }
 
-  const priority: Record<DueReminderKind, number> = { overdue: 0, relationship_overdue: 0, investment_task_overdue: 0, due_today: 1, relationship_today: 1, birthday_today: 1, investment_task_today: 1, birthday_upcoming: 2, scheduled: 3, recurring: 4 };
+  const priority: Record<DueReminderKind, number> = { overdue: 0, relationship_overdue: 0, investment_task_overdue: 0, due_today: 1, relationship_today: 1, birthday_today: 1, investment_task_today: 1, relationship_holiday: 2, birthday_upcoming: 2, scheduled: 3, recurring: 4 };
   return result.sort((a, b) => priority[a.kind] - priority[b.kind]);
 }
