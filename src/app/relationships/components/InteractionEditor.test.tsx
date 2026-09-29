@@ -7,7 +7,7 @@ const contact: Contact = {
   id: 'c1', user_id: 'u1', name: '胡琴', relationship_type: 'friend', role: '', met_context: '',
   family_context: '', work_context: '', important_notes: '', birthday_calendar: null,
   birthday_year: null, birthday_month: null, birthday_day: null, birthday_is_leap_month: false,
-  birthday_reminder_enabled: true, last_contact_at: null, next_contact_at: null, next_action: '',
+  birthday_reminder_enabled: true, holiday_contact_reminder_enabled: false, last_contact_at: null, next_contact_at: null, next_action: '',
   notes: '', source_type: 'manual', source_ref: null, review_status: 'approved',
   created_at: '2026-09-01T00:00:00Z', updated_at: '2026-09-01T00:00:00Z',
 };

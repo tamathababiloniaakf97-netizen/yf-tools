@@ -62,6 +62,7 @@ describe('Life OS domain values', () => {
       next_action: '约一次深入交流', notes: '', source_type: 'manual', source_ref: null,
       birthday_calendar: null, birthday_year: null, birthday_month: null,
       birthday_day: null, birthday_is_leap_month: false, birthday_reminder_enabled: true,
+      holiday_contact_reminder_enabled: false,
       review_status: 'approved', created_at: '2026-09-28T00:00:00Z',
       updated_at: '2026-09-28T00:00:00Z',
     };

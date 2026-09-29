@@ -7,6 +7,7 @@ const contact: Contact = {
   id: 'c1', user_id: 'u1', name: '胡琴', relationship_type: 'classmate', role: '跨境电商', met_context: '大学同学',
   family_context: '有一个孩子', work_context: '测试小红书获客', important_notes: '重视明确分工', birthday_calendar: 'lunar',
   birthday_year: null, birthday_month: 8, birthday_day: 15, birthday_is_leap_month: false, birthday_reminder_enabled: true,
+  holiday_contact_reminder_enabled: true,
   last_contact_at: '2026-09-29', next_contact_at: '2026-10-10', next_action: '发推广案例', notes: '', source_type: 'manual', source_ref: null,
   review_status: 'approved', created_at: '2026-09-01T00:00:00Z', updated_at: '2026-09-29T00:00:00Z',
 };

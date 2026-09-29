@@ -13,6 +13,8 @@ describe('ContactEditor', () => {
     expect(screen.getByLabelText('生日历法')).toBeInTheDocument();
     expect(screen.getByLabelText('生日月份')).toBeInTheDocument();
     expect(screen.getByLabelText('生日日期')).toBeInTheDocument();
+    expect(screen.getByLabelText('重要节日联系提示')).toBeInTheDocument();
+    expect(screen.getByText('春节、端午和中秋前3天开始提示。')).toBeInTheDocument();
     fireEvent.mouseDown(screen.getByLabelText('关系类型'));
     expect(await screen.findByText('同学')).toBeInTheDocument();
   });
