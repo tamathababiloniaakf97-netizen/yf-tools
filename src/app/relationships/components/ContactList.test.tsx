@@ -9,14 +9,14 @@ function contact(id: string, overrides: Partial<Contact> = {}): Contact {
 
 describe('ContactList', () => {
   it('separates due follow-ups while keeping every contact in the full list', () => {
-    render(<ContactList contacts={[contact('已延期', { next_contact_at: '2026-09-27' }), contact('今天联系', { next_contact_at: '2026-09-28' }), contact('最近联系', { last_contact_at: '2026-09-27' }), contact('未安排')]} today="2026-09-28" onEdit={vi.fn()} onInteract={vi.fn()} />);
+    render(<ContactList contacts={[contact('已延期', { next_contact_at: '2026-09-27' }), contact('今天联系', { next_contact_at: '2026-09-28' }), contact('最近联系', { last_contact_at: '2026-09-27' }), contact('未安排')]} today="2026-09-28" onView={vi.fn()} onEdit={vi.fn()} onInteract={vi.fn()} />);
     expect(screen.getByRole('heading', { name: '需要跟进 · 2' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '最近联系 · 1' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '全部联系人 · 4' })).toBeInTheDocument();
     expect(screen.getAllByText('已延期')).toHaveLength(2);
   });
   it('labels classmate relationships and uses relationship-history wording', () => {
-    render(<ContactList contacts={[contact('老同学', { relationship_type: 'classmate' })]} today="2026-09-28" onEdit={vi.fn()} onInteract={vi.fn()} />);
+    render(<ContactList contacts={[contact('老同学', { relationship_type: 'classmate' })]} today="2026-09-28" onView={vi.fn()} onEdit={vi.fn()} onInteract={vi.fn()} />);
     expect(screen.getByText('同学')).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: '记录往来' })).toHaveLength(1);
   });

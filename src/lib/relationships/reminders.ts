@@ -13,7 +13,7 @@ export function buildRelationshipReminders(contacts: Contact[], now = new Date()
     id: `contact:${contact.id}:${today}`, subject_type: 'contact' as const, subject_id: contact.id,
     title: contact.next_action || `联系 ${contact.name}`,
     kind: contact.next_contact_at! < today ? 'relationship_overdue' as const : 'relationship_today' as const,
-    due_date: contact.next_contact_at, href: '/relationships',
+    due_date: contact.next_contact_at, href: `/relationships?contact=${contact.id}`,
   })).sort((a, b) => a.kind === b.kind ? a.title.localeCompare(b.title) : a.kind === 'relationship_overdue' ? -1 : 1);
 }
 
