@@ -15,4 +15,9 @@ describe('ContactList', () => {
     expect(screen.getByRole('heading', { name: '全部联系人 · 4' })).toBeInTheDocument();
     expect(screen.getAllByText('已延期')).toHaveLength(2);
   });
+  it('labels classmate relationships and uses relationship-history wording', () => {
+    render(<ContactList contacts={[contact('老同学', { relationship_type: 'classmate' })]} today="2026-09-28" onEdit={vi.fn()} onInteract={vi.fn()} />);
+    expect(screen.getByText('同学')).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: '记录往来' })).toHaveLength(1);
+  });
 });
