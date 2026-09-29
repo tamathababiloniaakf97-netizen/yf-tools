@@ -2,12 +2,13 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { Button, Space, Card, App } from 'antd';
-import { PlusOutlined, SwapOutlined, ReloadOutlined } from '@ant-design/icons';
+import { PlusOutlined, SwapOutlined, ReloadOutlined, SettingOutlined } from '@ant-design/icons';
 import AuthGuard from '@/components/AuthGuard';
 import AccountSummaryCards from './components/AccountSummaryCards';
 import PositionTable from './components/PositionTable';
 import TransactionModal from './components/TransactionModal';
 import TickerModal from './components/TickerModal';
+import TickerManagerModal from './components/TickerManagerModal';
 import TransactionPanel from './components/TransactionPanel';
 import NavChart from './components/NavChart';
 import { calculateAccountSummary } from '@/lib/cost-engine';
@@ -25,6 +26,7 @@ export default function CostPage() {
 
   // Modal state
   const [tickerModalOpen, setTickerModalOpen] = useState(false);
+  const [tickerManagerOpen, setTickerManagerOpen] = useState(false);
   const [txModalOpen, setTxModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [viewTickerId, setViewTickerId] = useState<string | undefined>();
@@ -234,6 +236,9 @@ export default function CostPage() {
           <Button type="primary" icon={<PlusOutlined />} onClick={() => setTickerModalOpen(true)}>
             添加标的
           </Button>
+          <Button icon={<SettingOutlined />} onClick={() => setTickerManagerOpen(true)}>
+            管理标的
+          </Button>
           <Button icon={<SwapOutlined />} onClick={() => { setEditingTransaction(null); setTxModalOpen(true); }}>
             录入交易
           </Button>
@@ -309,6 +314,14 @@ export default function CostPage() {
         open={tickerModalOpen}
         onClose={() => setTickerModalOpen(false)}
         onSuccess={() => { loadData(); loadTransactions(); }}
+      />
+      <TickerManagerModal
+        open={tickerManagerOpen}
+        tickers={tickers}
+        onClose={() => setTickerManagerOpen(false)}
+        onDeleted={async () => {
+          await Promise.all([loadData(), loadTransactions()]);
+        }}
       />
       <TransactionModal
         open={txModalOpen}
