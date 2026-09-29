@@ -6,6 +6,13 @@ describe('relationship validation', () => {
     expect(validateContactInput({ name: ' 王律师 ', relationship_type: 'professional', role: ' 律师 ' })).toMatchObject({ ok: true, value: { name: '王律师', role: '律师', review_status: 'approved' } });
   });
 
+  it('defaults holiday contact reminders off and preserves an explicit opt-in', () => {
+    expect(validateContactInput({ name: '甲', relationship_type: 'friend' }))
+      .toMatchObject({ ok: true, value: { holiday_contact_reminder_enabled: false } });
+    expect(validateContactInput({ name: '乙', relationship_type: 'friend', holiday_contact_reminder_enabled: true }))
+      .toMatchObject({ ok: true, value: { holiday_contact_reminder_enabled: true } });
+  });
+
   it('rejects blank names, invalid types and reversed dates', () => {
     expect(validateContactInput({ name: ' ', relationship_type: 'friend' }).ok).toBe(false);
     expect(validateContactInput({ name: '甲', relationship_type: 'invalid' as 'friend' }).ok).toBe(false);

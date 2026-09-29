@@ -28,7 +28,7 @@ export function validateContactInput(input: ContactInput): Validation<ContactInp
   if (input.birthday_calendar !== 'lunar' && input.birthday_is_leap_month) errors.push('只有农历生日可以选择闰月');
   const auditFields = audit(input.source_type, input.source_ref, input.review_status, errors);
   if (errors.length) return { ok: false, errors };
-  return { ok: true, value: { ...input, name, role: text(input.role), met_context: text(input.met_context), family_context: text(input.family_context), work_context: text(input.work_context), important_notes: text(input.important_notes), birthday_is_leap_month: input.birthday_is_leap_month ?? false, birthday_reminder_enabled: input.birthday_reminder_enabled ?? true, next_action: text(input.next_action), notes: text(input.notes), ...auditFields } };
+  return { ok: true, value: { ...input, name, role: text(input.role), met_context: text(input.met_context), family_context: text(input.family_context), work_context: text(input.work_context), important_notes: text(input.important_notes), birthday_is_leap_month: input.birthday_is_leap_month ?? false, birthday_reminder_enabled: input.birthday_reminder_enabled ?? true, holiday_contact_reminder_enabled: input.holiday_contact_reminder_enabled ?? false, next_action: text(input.next_action), notes: text(input.notes), ...auditFields } };
 }
 
 export function validateContactInteractionInput(input: ContactInteractionInput): Validation<ContactInteractionInput> {

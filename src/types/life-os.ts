@@ -117,6 +117,7 @@ export interface Contact {
   birthday_day: number | null;
   birthday_is_leap_month: boolean;
   birthday_reminder_enabled: boolean;
+  holiday_contact_reminder_enabled: boolean;
   last_contact_at: string | null;
   next_contact_at: string | null;
   next_action: string;
@@ -132,6 +133,7 @@ export type ContactInput = Pick<Contact, 'name' | 'relationship_type'> & Partial
   'role' | 'met_context' | 'family_context' | 'work_context' | 'important_notes' |
   'birthday_calendar' | 'birthday_year' | 'birthday_month' | 'birthday_day' |
   'birthday_is_leap_month' | 'birthday_reminder_enabled' |
+  'holiday_contact_reminder_enabled' |
   'last_contact_at' | 'next_contact_at' | 'next_action' | 'notes' | 'source_type' |
   'source_ref' | 'review_status'
 >>;
