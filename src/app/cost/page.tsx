@@ -133,20 +133,30 @@ export default function CostPage() {
     setSyncing(true);
     try {
       const res = await fetch('/api/prices/sync', { method: 'POST' });
-      if (!res.ok) throw new Error('同步失败');
+      if (!res.ok) {
+        const errorBody = await res.json().catch(() => null);
+        throw new Error(errorBody?.error || '同步失败');
+      }
       const data = await res.json();
 
       // 更新价格
       const newPrices = { ...currentPrices };
       const newUpdatedAt: Record<string, string | null> = { ...priceUpdatedAt };
-      const today = new Date().toISOString().split('T')[0];
-      let count = 0;
+      const failed: { code: string; error: string }[] = [];
 
-      for (const r of data.results) {
-        if (r.price !== null && r.price > 0) {
+      for (const r of data.results as Array<{
+        id: string;
+        code: string;
+        status: 'updated' | 'failed';
+        price: number | null;
+        updated_at?: string;
+        error?: string;
+      }>) {
+        if (r.status === 'updated' && r.price !== null && r.updated_at) {
           newPrices[r.id] = r.price;
-          newUpdatedAt[r.id] = today;
-          count++;
+          newUpdatedAt[r.id] = r.updated_at;
+        } else {
+          failed.push({ code: r.code, error: r.error || '未知错误' });
         }
       }
 
@@ -158,13 +168,16 @@ export default function CostPage() {
       const newSummary = calculateAccountSummary(transactions, tickers, newPrices);
       setSummary(newSummary);
 
-      if (data.errors && data.errors.length > 0) {
-        message.warning(`已更新 ${count} 个，${data.errors.length} 个获取失败（${data.errors.map((e: any) => e.code).join(', ')}）`);
+      const count = data.summary?.updated ?? data.results.length - failed.length;
+      if (failed.length === data.results.length) {
+        message.error(`更新失败：${failed.map((item) => `${item.code}（${item.error}）`).join('；')}`);
+      } else if (failed.length > 0) {
+        message.warning(`已更新 ${count} 个，${failed.length} 个失败：${failed.map((item) => `${item.code}（${item.error}）`).join('；')}`);
       } else {
         message.success(`已更新 ${count} 个标的收盘价`);
       }
     } catch (err) {
-      message.error('同步失败，请稍后重试');
+      message.error(err instanceof Error ? err.message : '同步失败，请稍后重试');
       console.error(err);
     } finally {
       setSyncing(false);
