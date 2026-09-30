@@ -5,7 +5,7 @@ import type { HouseholdStatements } from '@/types/household-finance';
 
 const statements: HouseholdStatements = {
   balanceSheet: { assets: 100, liabilities: 30, netWorth: 70 },
-  income: { businessIncome: 50, businessExpense: 10, businessSurplus: 40, householdExpense: 20, investmentIncome: 5, periodSurplus: 25 },
+  income: { businessIncome: 50, businessExpense: 10, businessSurplus: 40, householdIncome: 3, householdExpense: 20, investmentIncome: 5, periodSurplus: 28 },
   cashFlow: { operating: 25, investing: -5, financing: -3, netChange: 17 },
   netWorthBridge: { unrealizedInvestmentChange: 2 },
 };

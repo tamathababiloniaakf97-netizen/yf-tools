@@ -11,4 +11,9 @@ describe('household finance validation', () => {
     const result = validateLedgerEntry({ entry_date: '2026-09-30', kind: 'business_income', amount_cny: 0, currency: 'USD', note: '' });
     expect(result).toEqual({ ok: false, error: '外币记录必须填写原币金额和正数汇率' });
   });
+
+  it('requires a liability for debt repayments', () => {
+    expect(validateLedgerEntry({ entry_date: '2026-09-30', kind: 'credit_card_payment', amount_cny: 1000 })).toEqual({ ok: false, error: '请选择对应负债' });
+    expect(validateLedgerEntry({ entry_date: '2026-09-30', kind: 'credit_card_payment', amount_cny: 1000, liability_id: 'card-1' }).ok).toBe(true);
+  });
 });

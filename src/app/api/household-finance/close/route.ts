@@ -12,3 +12,15 @@ export async function POST(request: Request) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ success: true });
 }
+
+export async function PATCH(request: Request) {
+  const supabase = await createServerSideClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: '未登录' }, { status: 401 });
+  const body = await request.json() as { period_month?: string };
+  if (!body.period_month || !/^\d{4}-\d{2}-01$/.test(body.period_month)) return NextResponse.json({ error: '请选择有效月份' }, { status: 400 });
+  const { data, error } = await supabase.from('household_period_closures').update({ status: 'reopened' }).eq('user_id', user.id).eq('period_month', body.period_month).select('period_month').maybeSingle();
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!data) return NextResponse.json({ error: '该月份尚未结账' }, { status: 404 });
+  return NextResponse.json({ success: true });
+}

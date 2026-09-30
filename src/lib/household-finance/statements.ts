@@ -17,10 +17,11 @@ export function buildHouseholdStatements(input: StatementInput): HouseholdStatem
   const sum = (...kinds: string[]) => entries.filter(entry => kinds.includes(entry.kind)).reduce((total, entry) => total + Number(entry.amount_cny), 0);
   const businessIncome = sum('business_income') - sum('business_refund');
   const businessExpense = sum('business_expense');
+  const householdIncome = sum('household_income');
   const householdExpense = sum('household_expense', 'loan_interest');
   const investmentIncome = sum('investment_income');
   const businessSurplus = businessIncome - businessExpense;
-  const periodSurplus = businessSurplus + investmentIncome - householdExpense;
+  const periodSurplus = businessSurplus + householdIncome + investmentIncome - householdExpense;
   const operating = periodSurplus;
   const investing = sum('security_sell', 'asset_sale') - sum('security_buy', 'asset_purchase');
   const financing = sum('loan_drawdown') - sum('loan_principal_payment');
@@ -28,7 +29,7 @@ export function buildHouseholdStatements(input: StatementInput): HouseholdStatem
   const liabilityValue = input.liabilities.reduce((total, item) => total + Number(item.value_cny), 0);
   return {
     balanceSheet: { assets: assetValue, liabilities: liabilityValue, netWorth: assetValue - liabilityValue },
-    income: { businessIncome, businessExpense, businessSurplus, householdExpense, investmentIncome, periodSurplus },
+    income: { businessIncome, businessExpense, businessSurplus, householdIncome, householdExpense, investmentIncome, periodSurplus },
     cashFlow: { operating, investing, financing, netChange: operating + investing + financing },
     netWorthBridge: { unrealizedInvestmentChange: input.investment?.unrealized_change_cny ?? 0 },
   };

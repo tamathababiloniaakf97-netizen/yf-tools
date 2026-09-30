@@ -12,14 +12,17 @@ describe('household finance statements', () => {
     expect(periodBounds(2026, 'year', 1)).toEqual({ start: '2026-01-01', end: '2026-12-31' });
   });
 
-  it('keeps transfers and loan principal out of income while treating interest as expense', () => {
+  it('counts household income and keeps repayments and investment transfers out of income', () => {
     const report = buildHouseholdStatements({
       start: '2026-07-01', end: '2026-09-30',
       entries: [
         { entry_date: '2026-07-02', kind: 'business_income', amount_cny: 100000 },
         { entry_date: '2026-07-03', kind: 'business_expense', amount_cny: 20000 },
         { entry_date: '2026-07-04', kind: 'household_expense', amount_cny: 10000 },
-        { entry_date: '2026-07-05', kind: 'internal_transfer', amount_cny: 50000 },
+        { entry_date: '2026-07-04', kind: 'household_income', amount_cny: 3000 },
+        { entry_date: '2026-07-05', kind: 'investment_transfer_in', amount_cny: 50000 },
+        { entry_date: '2026-07-05', kind: 'investment_transfer_out', amount_cny: 2000 },
+        { entry_date: '2026-07-05', kind: 'credit_card_payment', amount_cny: 8000, liability_id: 'card-1' },
         { entry_date: '2026-07-06', kind: 'loan_principal_payment', amount_cny: 5000 },
         { entry_date: '2026-07-06', kind: 'loan_interest', amount_cny: 1000 },
       ],
@@ -27,10 +30,11 @@ describe('household finance statements', () => {
       investment: { securities_cny: 200000, cash_cny: 50000, unrealized_change_cny: 12000 },
     });
     expect(report.income.businessSurplus).toBe(80000);
+    expect(report.income.householdIncome).toBe(3000);
     expect(report.income.householdExpense).toBe(11000);
-    expect(report.income.periodSurplus).toBe(69000);
+    expect(report.income.periodSurplus).toBe(72000);
     expect(report.cashFlow.financing).toBe(-5000);
-    expect(report.cashFlow.netChange).toBe(64000);
+    expect(report.cashFlow.netChange).toBe(67000);
     expect(report.balanceSheet.netWorth).toBe(1350000);
     expect(report.netWorthBridge.unrealizedInvestmentChange).toBe(12000);
   });
