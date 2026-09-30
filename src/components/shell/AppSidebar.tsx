@@ -17,6 +17,7 @@ const iconMap: Record<string, React.ReactNode> = {
   methodology: <SafetyCertificateOutlined />, viewpoints: <BookOutlined />,
   goals: <BulbOutlined />, life: <HeartOutlined />,
   relationships: <TeamOutlined />,
+  finance: <WalletOutlined />,
 };
 
 function toMenuItem(item: NavigationItem): Required<MenuProps>['items'][number] {

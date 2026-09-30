@@ -13,6 +13,7 @@ export interface NavigationItem {
 export const lifeOsNavigation: NavigationItem[] = [
   { key: 'home', label: '工作台首页', href: '/', icon: 'home' },
   { key: 'plans', label: '计划管理', href: '/plans', icon: 'plans' },
+  { key: 'finance', label: '家庭财务', href: '/finance', icon: 'finance' },
   {
     key: 'investment', label: '投资', href: '/investment', icon: 'investment',
     children: [
