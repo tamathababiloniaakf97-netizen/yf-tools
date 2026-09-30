@@ -20,6 +20,11 @@ describe('MonthlyEntryPanel', () => {
     expect(screen.getAllByText('收入').length).toBeGreaterThan(0);
     expect(screen.getAllByText('支出').length).toBeGreaterThan(0);
     fireEvent.click(screen.getByText('其他大额事项'));
+    expect(capitalEntryOptions.map(option => option.label)).toContain('房贷还款');
+    expect(capitalEntryOptions.map(option => option.label)).toContain('信用贷还款');
+    expect(capitalEntryOptions.map(option => option.label)).toContain('信用卡还款');
+    expect(capitalEntryOptions.map(option => option.label)).not.toContain('偿还本金');
+    expect(capitalEntryOptions.map(option => option.label)).not.toContain('贷款利息');
     expect(capitalEntryOptions.map(option => option.label)).toContain('投资转入');
     expect(capitalEntryOptions.map(option => option.label)).toContain('投资转出');
     expect(capitalEntryOptions.map(option => option.label)).not.toContain('内部转账');
