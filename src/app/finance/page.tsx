@@ -9,6 +9,7 @@ import MonthlyEntryPanel from './components/MonthlyEntryPanel';
 import BalanceSheetPanel from './components/BalanceSheetPanel';
 import StatementsPanel from './components/StatementsPanel';
 import MonthCloseModal from './components/MonthCloseModal';
+import FinanceGuideDrawer from './components/FinanceGuideDrawer';
 import { calculateAccountSummary } from '@/lib/cost-engine';
 import type { HouseholdClosure, HouseholdFinanceItem, HouseholdLedgerEntry, HouseholdStatements } from '@/types/household-finance';
 import type { PortfolioOpening, PortfolioOpeningPosition, Ticker, Transaction } from '@/types';
@@ -30,7 +31,7 @@ export default function FinancePage(){
  if(data&&!data.enabled)return <AuthGuard><Card style={{maxWidth:600,margin:'60px auto'}}><Empty description="家庭财务将从启用日开始，不伪造之前的历史数据。"/><Form form={enableForm} layout="inline" style={{justifyContent:'center'}} initialValues={{enabled_date:dayjs()}}><Form.Item name="enabled_date" label="启用日" rules={[{required:true}]}><DatePicker/></Form.Item><Button type="primary" onClick={()=>void enable()}>启用家庭财务</Button></Form></Card></AuthGuard>;
  const statements=data?.statements||emptyStatements;const closure=data?.closures?.sort((a,b)=>String(b.period_month).localeCompare(String(a.period_month)))[0]||null;
  return <AuthGuard><Space orientation="vertical" size="middle" style={{width:'100%'}}>
-  <div style={{display:'flex',justifyContent:'space-between',gap:12,flexWrap:'wrap'}}><div><Typography.Title level={3} style={{margin:0}}>家庭财务</Typography.Title><Typography.Text type="secondary">CNY 本位币 · 收付实现制 · 内部管理口径</Typography.Text></div><Button type="primary" icon={<CheckCircleOutlined/>} onClick={()=>setCloseOpen(true)}>月度结账</Button></div>
+  <div style={{display:'flex',justifyContent:'space-between',gap:12,flexWrap:'wrap'}}><div><Typography.Title level={3} style={{margin:0}}>家庭财务</Typography.Title><Typography.Text type="secondary">CNY 本位币 · 收付实现制 · 内部管理口径</Typography.Text></div><Space><FinanceGuideDrawer/><Button type="primary" icon={<CheckCircleOutlined/>} onClick={()=>setCloseOpen(true)}>月度结账</Button></Space></div>
   <Card size="small"><Space wrap><Segmented value={mode} onChange={v=>{const m=v as Mode;setMode(m);setIndex(m==='month'?now.getMonth()+1:m==='quarter'?Math.floor(now.getMonth()/3)+1:1)}} options={[{value:'month',label:'月度'},{value:'quarter',label:'季度'},{value:'year',label:'年度'}]}/><Select value={year} onChange={setYear} options={[year-1,year,year+1].filter((v,i,a)=>a.indexOf(v)===i).map(v=>({value:v,label:`${v}年`}))}/><Select value={index} onChange={setIndex} options={periodOptions}/><Typography.Text type="secondary">{data?.bounds.start} 至 {data?.bounds.end}</Typography.Text></Space></Card>
   <Tabs items={[{key:'overview',label:'总览',children:<FinanceOverview statements={statements} closure={closure}/>},{key:'entry',label:'月度录入',children:<MonthlyEntryPanel entries={data?.entries||[]} liabilities={items.filter(item=>item.item_type==='liability')} loading={loading} onRefresh={()=>void load()}/>},{key:'balance',label:'资产负债',children:<BalanceSheetPanel items={items} onRefresh={()=>void load()}/>},{key:'reports',label:'财务报表',children:<StatementsPanel statements={statements}/>}]} />
   {!data?.investment&&<Alert type="info" showIcon message="尚未封存投资月末快照" description="完成首次月度结账后，投资资产才进入家庭资产负债表。"/>}

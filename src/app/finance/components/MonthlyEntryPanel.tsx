@@ -1,7 +1,8 @@
 'use client';
 import { useMemo, useState } from 'react';
-import { App, Button, Card, DatePicker, Form, Input, InputNumber, Popconfirm, Radio, Select, Space, Table, Tabs } from 'antd';
+import { Alert, App, Button, Card, DatePicker, Form, Input, InputNumber, Popconfirm, Radio, Select, Space, Table, Tabs } from 'antd';
 import dayjs from 'dayjs';
+import { entryGuidance } from '@/lib/household-finance/entry-guidance';
 import type { HouseholdEntryKind, HouseholdFinanceItem, HouseholdLedgerEntry } from '@/types/household-finance';
 
 type Scope = 'business' | 'household' | 'capital';
@@ -60,7 +61,7 @@ export default function MonthlyEntryPanel({ entries, liabilities, loading, onRef
     {currency !== 'CNY' && <Form.Item name="fx_rate" label="USD/CNY 汇率" rules={[{required:true}]}><InputNumber min={0.0001} precision={4}/></Form.Item>}
     <Form.Item name="note" label="备注"><Input placeholder={active === 'business' ? '如：本月教培实收' : active === 'household' ? '如：本月家庭小额汇总' : '说明对应事项'} /></Form.Item>
     <Space><Button type="primary" loading={saving} onClick={() => void save()}>{editing ? '保存修改' : '保存'}</Button>{editing && <Button onClick={() => reset()}>取消编辑</Button>}</Space>
-  </Form></Card>;
+  </Form>{entryGuidance(kind) && <Alert type="info" showIcon title={entryGuidance(kind)} style={{marginTop:12}} />}</Card>;
   return <Space orientation="vertical" size="middle" style={{width:'100%'}}>
     <Tabs activeKey={active} onChange={changeScope} items={[{key:'business',label:'经营收支',children:formBody},{key:'household',label:'家庭收支',children:formBody},{key:'capital',label:'其他大额事项',children:formBody}]} />
     <Table rowKey={row => row.id || `${row.entry_date}-${row.note}`} loading={loading} dataSource={visibleEntries} pagination={{pageSize:10}} columns={[{title:'日期',dataIndex:'entry_date'},{title:'类型',dataIndex:'kind',render:(value:HouseholdEntryKind)=>kindLabels[value]||value},{title:'金额',dataIndex:'amount_cny',render:(value:number)=>`¥${Number(value).toFixed(2)}`},{title:'备注',dataIndex:'note'},{title:'操作',render:(_,entry)=><Space><Button type="link" onClick={()=>edit(entry)}>编辑</Button><Popconfirm title="确认删除？" onConfirm={()=>void remove(entry)}><Button danger type="link">删除</Button></Popconfirm></Space>}]} />
