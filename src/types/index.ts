@@ -132,6 +132,29 @@ export type PendingOrderInput = Omit<
   'id' | 'user_id' | 'created_at' | 'updated_at' | 'tickers'
 >;
 
+export interface PortfolioOpening {
+  user_id: string;
+  opening_date: string;
+  opening_cash: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PortfolioOpeningPosition {
+  id?: string;
+  user_id?: string;
+  ticker_id: string;
+  quantity: number;
+  total_cost_usd: number;
+  opening_market_value_usd: number;
+}
+
+export interface PortfolioOpeningInput {
+  opening_date: string;
+  opening_cash: number;
+  positions: PortfolioOpeningPosition[];
+}
+
 export interface NavHistory {
   id: string;
   user_id: string;
@@ -170,6 +193,12 @@ export interface AccountSummary {
   pnlPercent: number | null; // null 当总投入≤0
   positions: Position[];
   openOptions: OptionPosition[]; // 未平仓期权仓位
+  openingConfigured?: boolean;
+  netContributions?: number | null;
+  cumulativePnl?: number | null;
+  xirr?: number | null;
+  stockExposurePercent?: number;
+  leverageMultiple?: number;
 }
 
 export interface CostBasisResult {

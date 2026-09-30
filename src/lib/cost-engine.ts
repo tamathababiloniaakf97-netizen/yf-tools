@@ -1,6 +1,7 @@
-import type { CostBasisResult, Transaction, Ticker, Position, AccountSummary, OptionPosition, OptionDetail, OptionDirection, OptionCallPut } from '@/types';
+import type { CostBasisResult, Transaction, Ticker, Position, AccountSummary, OptionPosition, OptionDetail, OptionCallPut, PortfolioOpening, PortfolioOpeningPosition } from '@/types';
 import { toUSD } from './exchange';
 import { parseLegacyOptionType } from '@/types';
+import { calculateXirr } from './xirr';
 
 // ============================================================
 // 期权：金额计算 / 仓位分组 / PnL
@@ -9,17 +10,6 @@ import { parseLegacyOptionType } from '@/types';
 /**
  * 从 option_detail 中提取 direction，兼容新旧格式
  */
-function getDirection(od: OptionDetail | null | undefined): OptionDirection | null {
-  if (!od) return null;
-  if (od.direction) return od.direction;
-  // 旧版兼容：从 option_type 解析
-  if (od.option_type) {
-    const parsed = parseLegacyOptionType(od.option_type);
-    if (parsed) return parsed.direction;
-  }
-  return null;
-}
-
 function getCallPut(od: OptionDetail | null | undefined): OptionCallPut | null {
   if (!od) return null;
   if (od.type) return od.type;
@@ -95,11 +85,6 @@ export function calculateOptionPositionPnL(
     const first = txns[0];
     const tickerId = first.ticker_id ?? '';
     const od = first.option_detail;
-    const direction = getDirection(od);
-
-    // 是否为旧版数据（无 direction 字段）
-    const isLegacy = !direction;
-
     // 完全平仓判断
     const isFullyClosed = remainingQty <= 0;
 
@@ -135,41 +120,39 @@ export function calculateOptionPositionPnL(
 }
 
 /**
- * 计算单个标的的持仓成本（终身成本法）
+ * 计算单个标的的持仓成本（移动加权平均法）
  *
  * 公式：
- *   持仓成本 = (累计买入总支出 - 累计卖出总收入 - 累计分红) ÷ 当前持仓数量
+ *   买入增加账面成本；卖出按卖出前平均成本移除账面成本。
  *
  * 关键规则：
- *   - 终身制不清零：清仓后成本池保持不变
- *   - 期权收益不计入持仓成本，通过 optionPnl 单独展示
+ *   - 分红、卖出价格与期权收益不冲减剩余股票成本
+ *   - 期权收益通过 optionPnl 单独展示
  */
 export function calculateCostBasis(
   transactions: Transaction[],
-  tickerCurrency: string
+  tickerCurrency: string,
+  openingPosition?: PortfolioOpeningPosition,
 ): CostBasisResult {
-  let totalBought = 0;
-  let totalSold = 0;
-  let totalBuyAmount = 0;
-  let totalSellAmount = 0;
-  let totalDividend = 0;
+  let totalShares = openingPosition?.quantity ?? 0;
+  let carryingCost = openingPosition?.total_cost_usd ?? 0;
 
   const optionTx: Transaction[] = [];
 
-  for (const t of transactions) {
+  for (const t of [...transactions].sort((a, b) => a.trade_date.localeCompare(b.trade_date))) {
     const amountUSD = t.amount_usd ?? toUSD(t.amount_orig ?? 0, tickerCurrency);
 
     switch (t.type) {
       case 'buy':
-        totalBought += t.quantity ?? 0;
-        totalBuyAmount += amountUSD;
+        totalShares += t.quantity ?? 0;
+        carryingCost += amountUSD;
         break;
       case 'sell':
-        totalSold += t.quantity ?? 0;
-        totalSellAmount += amountUSD;
-        break;
-      case 'dividend':
-        totalDividend += amountUSD;
+        if (totalShares > 0) {
+          const sold = Math.min(t.quantity ?? 0, totalShares);
+          carryingCost -= (carryingCost / totalShares) * sold;
+          totalShares -= sold;
+        }
         break;
       case 'option_income':
         optionTx.push(t);
@@ -180,23 +163,20 @@ export function calculateCostBasis(
   // 计算期权仓位 PnL（仅已平仓仓位）
   const { closedPnL } = calculateOptionPositionPnL(optionTx);
 
-  const totalShares = totalBought - totalSold;
-  const costPool = totalBuyAmount - totalSellAmount - totalDividend;
-
   if (totalShares <= 0) {
     return {
       costPerShare: 0,
       totalCost: 0,
       totalShares: 0,
-      isNegativeCost: costPool < 0,
+      isNegativeCost: false,
       optionPnl: closedPnL,
     };
   }
 
-  const costPerShare = costPool / totalShares;
+  const costPerShare = carryingCost / totalShares;
   return {
     costPerShare,
-    totalCost: costPool,
+    totalCost: carryingCost,
     totalShares,
     isNegativeCost: costPerShare < 0,
     optionPnl: closedPnL,
@@ -215,13 +195,15 @@ export function calculateCostBasis(
 export function calculateAccountSummary(
   allTransactions: Transaction[],
   tickers: Ticker[],
-  currentPrices: Record<string, number>
+  currentPrices: Record<string, number>,
+  openingData?: { opening: PortfolioOpening; positions: PortfolioOpeningPosition[] } | null,
 ): AccountSummary {
   let totalDeposit = 0;
   let totalWithdraw = 0;
   let totalBuyAmount = 0;
   let totalSellAmount = 0;
   let totalDividend = 0;
+  let totalOptionCash = 0;
   const txByTicker: Record<string, Transaction[]> = {};
   for (const t of allTransactions) {
     if (t.ticker_id && (t.type === 'buy' || t.type === 'sell' || t.type === 'dividend' || t.type === 'option_income')) {
@@ -246,17 +228,21 @@ export function calculateAccountSummary(
       case 'dividend':
         totalDividend += amountUSD;
         break;
+      case 'option_income':
+        totalOptionCash += amountUSD;
+        break;
     }
   }
 
   // 计算每个标的的持仓
   const positions: Position[] = [];
   let totalMarketValue = 0;
-  const allOptionTx: Transaction[] = [];
+  const allOptionTx = allTransactions.filter(t => t.type === 'option_income');
+  const openingPositionMap = new Map(openingData?.positions.map(position => [position.ticker_id, position]) ?? []);
 
   for (const ticker of tickers) {
     const tickerTx = txByTicker[ticker.id] || [];
-    const costBasis = calculateCostBasis(tickerTx, ticker.currency);
+    const costBasis = calculateCostBasis(tickerTx, ticker.currency, openingPositionMap.get(ticker.id));
     if (costBasis.totalShares <= 0) continue;
 
     const currentPrice = currentPrices[ticker.id] ?? 0;
@@ -282,11 +268,10 @@ export function calculateAccountSummary(
       allocPercent: 0,
     });
 
-    allOptionTx.push(...tickerTx.filter(t => t.type === 'option_income'));
   }
 
   // 计算未平仓期权仓位
-  const { closedPnL, openPositions } = calculateOptionPositionPnL(allOptionTx);
+  const { openPositions } = calculateOptionPositionPnL(allOptionTx);
 
   // 补充 ticker_name
   const tickerMap = new Map(tickers.map(t => [t.id, t.name]));
@@ -295,15 +280,27 @@ export function calculateAccountSummary(
   }
 
   // 现金余额（所有期权现金流都真实影响现金）
-  const cashBalance = totalDeposit - totalWithdraw + totalSellAmount - totalBuyAmount + totalDividend + closedPnL;
+  const cashBalance = (openingData?.opening.opening_cash ?? 0) + totalDeposit - totalWithdraw + totalSellAmount - totalBuyAmount + totalDividend + totalOptionCash;
   const totalAssets = totalMarketValue + cashBalance;
-  const totalInvested = totalDeposit - totalWithdraw;
+  const openingNetAssets = openingData
+    ? openingData.opening.opening_cash + openingData.positions.reduce((sum, position) => sum + position.opening_market_value_usd, 0)
+    : 0;
+  const netContributions = openingData ? openingNetAssets + totalDeposit - totalWithdraw : null;
+  const totalInvested = netContributions ?? totalDeposit - totalWithdraw;
   const totalPnL = totalAssets - totalInvested;
   const pnlPercent = totalInvested > 0 ? (totalPnL / totalInvested) * 100 : null;
 
   for (const p of positions) {
     p.allocPercent = totalAssets > 0 ? (p.marketValue / totalAssets) * 100 : 0;
   }
+
+  const xirr = openingData ? calculateXirr([
+    { date: openingData.opening.opening_date, amount: -openingNetAssets },
+    ...allTransactions.filter(transaction => transaction.type === 'deposit').map(transaction => ({ date: transaction.trade_date, amount: -(transaction.amount_usd ?? 0) })),
+    ...allTransactions.filter(transaction => transaction.type === 'withdraw').map(transaction => ({ date: transaction.trade_date, amount: transaction.amount_usd ?? 0 })),
+    { date: new Date().toISOString().slice(0, 10), amount: totalAssets },
+  ]) : null;
+  const stockExposurePercent = totalAssets > 0 ? totalMarketValue / totalAssets * 100 : 0;
 
   return {
     totalAssets,
@@ -314,5 +311,11 @@ export function calculateAccountSummary(
     pnlPercent,
     positions,
     openOptions: openPositions,
+    openingConfigured: !!openingData,
+    netContributions,
+    cumulativePnl: openingData ? totalPnL : null,
+    xirr,
+    stockExposurePercent,
+    leverageMultiple: totalAssets > 0 ? totalMarketValue / totalAssets : 0,
   };
 }

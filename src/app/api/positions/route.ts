@@ -24,5 +24,11 @@ export async function GET() {
 
   if (txErr) return NextResponse.json({ error: txErr.message }, { status: 500 });
 
-  return NextResponse.json({ tickers, transactions });
+  const [{ data: opening, error: openingErr }, { data: openingPositions, error: openingPositionsErr }] = await Promise.all([
+    supabase.from('portfolio_openings').select('*').eq('user_id', user.id).maybeSingle(),
+    supabase.from('portfolio_opening_positions').select('*').eq('user_id', user.id),
+  ]);
+  if (openingErr || openingPositionsErr) return NextResponse.json({ error: openingErr?.message || openingPositionsErr?.message }, { status: 500 });
+
+  return NextResponse.json({ tickers, transactions, opening, openingPositions: openingPositions ?? [] });
 }

@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { Button, Space, Card, App } from 'antd';
-import { PlusOutlined, SwapOutlined, ReloadOutlined, SettingOutlined } from '@ant-design/icons';
+import { Alert, Button, Space, Card, App, Statistic, Tag } from 'antd';
+import { PlusOutlined, SwapOutlined, ReloadOutlined, SettingOutlined, DatabaseOutlined } from '@ant-design/icons';
 import AuthGuard from '@/components/AuthGuard';
 import AccountSummaryCards from './components/AccountSummaryCards';
 import PositionTable from './components/PositionTable';
@@ -10,11 +10,10 @@ import TransactionModal from './components/TransactionModal';
 import TickerModal from './components/TickerModal';
 import TickerManagerModal from './components/TickerManagerModal';
 import TransactionPanel from './components/TransactionPanel';
-import NavChart from './components/NavChart';
 import PendingOrdersPanel from './components/PendingOrdersPanel';
+import PortfolioOpeningModal from './components/PortfolioOpeningModal';
 import { calculateAccountSummary } from '@/lib/cost-engine';
-import { calculateAllMetrics } from '@/lib/portfolio';
-import type { Ticker, Transaction, AccountSummary, PendingOrder } from '@/types';
+import type { Ticker, Transaction, AccountSummary, PendingOrder, PortfolioOpening, PortfolioOpeningPosition, TickerStyle } from '@/types';
 
 export default function CostPage() {
   const { message } = App.useApp();
@@ -27,6 +26,8 @@ export default function CostPage() {
   const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([]);
   const [pendingOrdersLoading, setPendingOrdersLoading] = useState(true);
   const [pendingOrderTickerId, setPendingOrderTickerId] = useState<string>();
+  const [opening, setOpening] = useState<PortfolioOpening | null>(null);
+  const [openingPositions, setOpeningPositions] = useState<PortfolioOpeningPosition[]>([]);
 
   // Modal state
   const [tickerModalOpen, setTickerModalOpen] = useState(false);
@@ -34,12 +35,11 @@ export default function CostPage() {
   const [txModalOpen, setTxModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [viewTickerId, setViewTickerId] = useState<string | undefined>();
+  const [openingModalOpen, setOpeningModalOpen] = useState(false);
 
   // NAV chart state
   const [currentPrices, setCurrentPrices] = useState<Record<string, number>>({});
   const [priceUpdatedAt, setPriceUpdatedAt] = useState<Record<string, string | null>>({});
-  const [spyNav, setSpyNav] = useState<{ date: string; nav: number }[]>([]);
-  const [spyError, setSpyError] = useState<string | undefined>();
 
   // 从 tickers 构建 currentPrices（数据库中的 current_price 优先）
   const buildPricesFromTickers = useCallback((tickersData: Ticker[]) => {
@@ -70,6 +70,9 @@ export default function CostPage() {
       const data = await res.json();
       const tickersData: Ticker[] = data.tickers || [];
       setTickers(tickersData);
+      setTransactions(data.transactions || []);
+      setOpening(data.opening ?? null);
+      setOpeningPositions(data.openingPositions ?? []);
 
       // 从 tickers 恢复现价
       const { prices, updatedAt } = buildPricesFromTickers(tickersData);
@@ -77,11 +80,8 @@ export default function CostPage() {
       setPriceUpdatedAt(updatedAt);
 
       // 计算账户汇总
-      const accountSummary = calculateAccountSummary(
-        data.transactions || [],
-        tickersData,
-        prices
-      );
+      const accountSummary = calculateAccountSummary(data.transactions || [], tickersData, prices,
+        data.opening ? { opening: data.opening, positions: data.openingPositions || [] } : null);
       setSummary(accountSummary);
     } catch (err) {
       console.error(err);
@@ -133,7 +133,7 @@ export default function CostPage() {
     localStorage.setItem('currentPrices', JSON.stringify(newPrices));
 
     // 重新计算汇总
-    const newSummary = calculateAccountSummary(transactions, tickers, newPrices);
+    const newSummary = calculateAccountSummary(transactions, tickers, newPrices, opening ? { opening, positions: openingPositions } : null);
     setSummary(newSummary);
 
     // 保存到数据库
@@ -187,7 +187,7 @@ export default function CostPage() {
       localStorage.setItem('currentPrices', JSON.stringify(newPrices));
 
       // 重新计算汇总
-      const newSummary = calculateAccountSummary(transactions, tickers, newPrices);
+      const newSummary = calculateAccountSummary(transactions, tickers, newPrices, opening ? { opening, positions: openingPositions } : null);
       setSummary(newSummary);
 
       const count = data.summary?.updated ?? data.results.length - failed.length;
@@ -206,47 +206,16 @@ export default function CostPage() {
     }
   };
 
-  // 统一计算所有指标（portfolio.ts）
-  const portfolioMetrics = React.useMemo(() => {
-    if (transactions.length === 0 || tickers.length === 0) {
-      return { navSeries: [], twrReturn: null, annualizedReturn: null, maxDrawdown: 0, accountReturn: null };
-    }
-    return calculateAllMetrics(
-      transactions,
-      tickers,
-      currentPrices,
-      summary?.totalAssets ?? 0,
-      summary?.totalInvested ?? 0,
-      60 // 年化至少 60 天
-    );
-  }, [transactions, tickers, currentPrices, summary]);
-
-  const userNav = portfolioMetrics.navSeries;
-  const strategyReturnPercent = portfolioMetrics.twrReturn;
-  const annualizedReturn = portfolioMetrics.annualizedReturn;
-  const maxDrawdown = portfolioMetrics.maxDrawdown;
-  const accountReturnPercent = portfolioMetrics.accountReturn;
-
-  // 获取标普500数据
-  useEffect(() => {
-    if (userNav.length === 0) return;
-    const startDate = userNav[0].date;
-
-    fetch(`/api/spy?start=${startDate}`)
-      .then((res) => {
-        if (!res.ok) return res.json().then((d) => { throw new Error(d.error); });
-        return res.json();
-      })
-      .then((data) => {
-        setSpyNav(data.series || []);
-        setSpyError(undefined);
-      })
-      .catch((err) => {
-        console.error('SPY fetch error:', err);
-        setSpyError(err.message || '基准数据暂时无法获取');
-        setSpyNav([]);
-      });
-  }, [userNav]);
+  const earliestTransactionDate = transactions.length > 0
+    ? transactions.reduce((earliest, transaction) => transaction.trade_date < earliest ? transaction.trade_date : earliest, transactions[0].trade_date)
+    : null;
+  const styleAllocation = React.useMemo(() => {
+    if (!summary || summary.marketValue <= 0) return [];
+    const labels: Record<TickerStyle, { label: string; color: string }> = { offensive: { label: '进攻', color: 'red' }, balanced: { label: '平衡', color: 'blue' }, defensive: { label: '防守', color: 'green' } };
+    const values = new Map<TickerStyle, number>();
+    summary.positions.forEach(position => { if (position.ticker.style) values.set(position.ticker.style, (values.get(position.ticker.style) ?? 0) + position.marketValue); });
+    return [...values.entries()].map(([style, value]) => ({ ...labels[style], percent: value / summary.marketValue * 100 }));
+  }, [summary]);
 
   return (
     <AuthGuard>
@@ -262,6 +231,9 @@ export default function CostPage() {
           <Button icon={<SwapOutlined />} onClick={() => { setEditingTransaction(null); setTxModalOpen(true); }}>
             录入交易
           </Button>
+          <Button icon={<DatabaseOutlined />} onClick={() => setOpeningModalOpen(true)}>
+            {opening ? '编辑期初账户' : '设置期初账户'}
+          </Button>
         </Space>
         <Button icon={<ReloadOutlined />} onClick={() => { loadData(); loadTransactions(); }}>
           刷新数据
@@ -269,15 +241,16 @@ export default function CostPage() {
       </div>
 
       {/* 账户总览 */}
-      <AccountSummaryCards
-        summary={summary}
-        loading={loading}
-        strategyReturnPercent={strategyReturnPercent}
-        accountReturnPercent={accountReturnPercent}
-      />
+      {!opening && <Alert type="warning" showIcon style={{ marginBottom: 16 }} message="请先设置期初账户" description="完成期初现金与期初持仓后，系统才能正确计算净入金、累计盈亏和 XIRR。" />}
+      <AccountSummaryCards summary={summary} loading={loading} />
 
       {/* 持仓列表 */}
       <Card title="持仓明细" size="small" style={{ marginBottom: 16 }}>
+        <Space wrap size="large" style={{ marginBottom: 12 }}>
+          <Statistic title="股票敞口" value={summary?.stockExposurePercent ?? 0} precision={1} suffix="%" styles={{ content: { fontSize: 18 } }} />
+          <Statistic title="融资倍数" value={summary?.leverageMultiple ?? 0} precision={2} suffix="x" styles={{ content: { fontSize: 18 } }} />
+          {styleAllocation.length > 0 && <div><div style={{ color: 'rgba(0,0,0,0.45)', marginBottom: 6 }}>风格占比</div><Space size={4}>{styleAllocation.map(item => <Tag key={item.label} color={item.color}>{item.label} {item.percent.toFixed(0)}%</Tag>)}</Space></div>}
+        </Space>
         <PositionTable
           positions={summary?.positions || []}
           loading={loading}
@@ -297,27 +270,9 @@ export default function CostPage() {
         />
       </Card>
 
-      {/* 净值曲线图 */}
-      <div style={{ marginBottom: 16 }}>
-        <NavChart
-          userNav={userNav}
-          spyNav={spyNav}
-          loading={loading}
-          spyError={spyError}
-          metrics={userNav.length >= 2 ? {
-            twrReturn: strategyReturnPercent ?? 0,
-            annualizedReturn,
-            maxDrawdown,
-            spyReturn: spyNav.length >= 2
-              ? ((spyNav[spyNav.length - 1].nav - spyNav[0].nav) / spyNav[0].nav) * 100
-              : null,
-            spyAnnual: spyNav.length >= 2
-              ? (() => { const d = (new Date(spyNav[spyNav.length - 1].date).getTime() - new Date(spyNav[0].date).getTime()) / 86400000; return d >= 60 ? (Math.pow(spyNav[spyNav.length - 1].nav / spyNav[0].nav, 365 / d) - 1) * 100 : null; })()
-              : null,
-            spyMaxDd: (() => { if (spyNav.length === 0) return 0; let p = spyNav[0].nav; let m = 0; for (const s of spyNav) { if (s.nav > p) p = s.nav; const d = (p - s.nav) / p; if (d > m) m = d; } return m * 100; })(),
-          } : null}
-        />
-      </div>
+      <Card title="历史绩效" size="small" style={{ marginBottom: 16 }}>
+        <Alert type="info" showIcon message="历史净值暂未启用" description="目前只有当前价格，用它回填历史会产生错误的 TWR、年化收益率和最大回撤。待补齐每日历史价格后，再恢复净值曲线与标普500对比。" />
+      </Card>
 
       {/* 待成交挂单：独立于交易流水，不参与持仓与净值计算 */}
       <div id="pending-orders-section" style={{ marginBottom: 16 }}>
@@ -371,6 +326,15 @@ export default function CostPage() {
         tickers={tickers}
         openPositions={summary?.openOptions ?? []}
         editingTransaction={editingTransaction}
+      />
+      <PortfolioOpeningModal
+        open={openingModalOpen}
+        tickers={tickers}
+        opening={opening}
+        positions={openingPositions}
+        earliestTransactionDate={earliestTransactionDate}
+        onClose={() => setOpeningModalOpen(false)}
+        onSuccess={async () => { await Promise.all([loadData(), loadTransactions()]); }}
       />
     </AuthGuard>
   );
