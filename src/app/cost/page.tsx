@@ -11,9 +11,10 @@ import TickerModal from './components/TickerModal';
 import TickerManagerModal from './components/TickerManagerModal';
 import TransactionPanel from './components/TransactionPanel';
 import NavChart from './components/NavChart';
+import PendingOrdersPanel from './components/PendingOrdersPanel';
 import { calculateAccountSummary } from '@/lib/cost-engine';
 import { calculateAllMetrics } from '@/lib/portfolio';
-import type { Ticker, Transaction, AccountSummary } from '@/types';
+import type { Ticker, Transaction, AccountSummary, PendingOrder } from '@/types';
 
 export default function CostPage() {
   const { message } = App.useApp();
@@ -23,6 +24,9 @@ export default function CostPage() {
   const [loading, setLoading] = useState(true);
   const [txLoading, setTxLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([]);
+  const [pendingOrdersLoading, setPendingOrdersLoading] = useState(true);
+  const [pendingOrderTickerId, setPendingOrderTickerId] = useState<string>();
 
   // Modal state
   const [tickerModalOpen, setTickerModalOpen] = useState(false);
@@ -101,10 +105,26 @@ export default function CostPage() {
     }
   }, []);
 
+  const loadPendingOrders = useCallback(async () => {
+    setPendingOrdersLoading(true);
+    try {
+      const res = await fetch('/api/pending-orders');
+      if (!res.ok) throw new Error('挂单加载失败');
+      setPendingOrders(await res.json());
+    } catch (err) {
+      console.error(err);
+      message.error('挂单加载失败');
+    } finally {
+      setPendingOrdersLoading(false);
+    }
+  }, [message]);
+
   useEffect(() => {
-    loadData();
-    loadTransactions();
-  }, [loadData, loadTransactions]);
+    const timeout = window.setTimeout(() => {
+      void Promise.all([loadData(), loadTransactions(), loadPendingOrders()]);
+    }, 0);
+    return () => window.clearTimeout(timeout);
+  }, [loadData, loadTransactions, loadPendingOrders]);
 
   // 保存现价（本地+服务器）
   const handlePriceChange = async (tickerId: string, price: number) => {
@@ -265,6 +285,10 @@ export default function CostPage() {
             setViewTickerId(tickerId);
             document.getElementById('transactions-section')?.scrollIntoView({ behavior: 'smooth' });
           }}
+          onViewPendingOrders={(tickerId) => {
+            setPendingOrderTickerId(tickerId);
+            document.getElementById('pending-orders-section')?.scrollIntoView({ behavior: 'smooth' });
+          }}
           onPriceChange={handlePriceChange}
           onSyncPrices={handleSyncPrices}
           onRefresh={loadData}
@@ -293,6 +317,23 @@ export default function CostPage() {
             spyMaxDd: (() => { if (spyNav.length === 0) return 0; let p = spyNav[0].nav; let m = 0; for (const s of spyNav) { if (s.nav > p) p = s.nav; const d = (p - s.nav) / p; if (d > m) m = d; } return m * 100; })(),
           } : null}
         />
+      </div>
+
+      {/* 待成交挂单：独立于交易流水，不参与持仓与净值计算 */}
+      <div id="pending-orders-section" style={{ marginBottom: 16 }}>
+        <Card title="待成交挂单" size="small">
+          <PendingOrdersPanel
+            orders={pendingOrders}
+            tickers={tickers}
+            openPositions={summary?.openOptions ?? []}
+            loading={pendingOrdersLoading}
+            selectedTickerId={pendingOrderTickerId}
+            onSelectedTickerIdChange={setPendingOrderTickerId}
+            onRefresh={async () => {
+              await Promise.all([loadPendingOrders(), loadData(), loadTransactions()]);
+            }}
+          />
+        </Card>
       </div>
 
       {/* 交易流水 */}

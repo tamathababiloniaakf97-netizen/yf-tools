@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Table, Tag, Button, InputNumber, Select, App, Tooltip } from 'antd';
+import { Table, Tag, Button, InputNumber, Select, App, Tooltip, Space } from 'antd';
 import { EyeOutlined, CloudSyncOutlined, EditOutlined } from '@ant-design/icons';
 import type { Position, TickerStyle } from '@/types';
 import type { ColumnsType } from 'antd/es/table';
@@ -10,6 +10,7 @@ interface Props {
   positions: Position[];
   loading: boolean;
   onViewTransactions: (tickerId: string) => void;
+  onViewPendingOrders: (tickerId: string) => void;
   onPriceChange: (tickerId: string, price: number) => void;
   onSyncPrices: () => Promise<void>;
   onRefresh: () => void;
@@ -38,7 +39,7 @@ const typeLabels: Record<string, { label: string; color: string }> = {
 };
 
 export default function PositionTable({
-  positions, loading, onViewTransactions,
+  positions, loading, onViewTransactions, onViewPendingOrders,
   onPriceChange, onSyncPrices, onRefresh, syncing, priceUpdatedAt,
 }: Props) {
   const { message } = App.useApp();
@@ -249,16 +250,12 @@ export default function PositionTable({
       title: '操作',
       key: 'action',
       render: (_, record) => (
-        <Button
-          type="link"
-          size="small"
-          icon={<EyeOutlined />}
-          onClick={() => onViewTransactions(record.ticker.id)}
-        >
-          流水
-        </Button>
+        <Space size={0}>
+          <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => onViewTransactions(record.ticker.id)}>流水</Button>
+          <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => onViewPendingOrders(record.ticker.id)}>挂单</Button>
+        </Space>
       ),
-      width: 70,
+      width: 140,
     },
   ];
 

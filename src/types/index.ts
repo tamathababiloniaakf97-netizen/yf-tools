@@ -106,6 +106,32 @@ export interface Transaction {
   created_at: string;
 }
 
+export type PendingOrderCategory = 'stock' | 'option';
+
+export interface PendingOrder {
+  id: string;
+  user_id: string;
+  ticker_id: string;
+  category: PendingOrderCategory;
+  side: 'buy' | 'sell';
+  option_action: OptionAction | null;
+  option_type: OptionCallPut | null;
+  position_id: string | null;
+  quantity: number;
+  price: number;
+  strike_price: number | null;
+  expiration_date: string | null;
+  order_date: string;
+  created_at: string;
+  updated_at: string;
+  tickers?: Pick<Ticker, 'name' | 'code' | 'currency'>;
+}
+
+export type PendingOrderInput = Omit<
+  PendingOrder,
+  'id' | 'user_id' | 'created_at' | 'updated_at' | 'tickers'
+>;
+
 export interface NavHistory {
   id: string;
   user_id: string;
