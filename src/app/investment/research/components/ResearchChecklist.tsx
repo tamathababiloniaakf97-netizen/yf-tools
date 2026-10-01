@@ -1,6 +1,7 @@
 'use client';
 import { Collapse, Form, Input, Select, Space, Typography } from 'antd';
 import type { ResearchChecklistState } from '@/types/life-os';
+import FieldGuidance from '../../components/FieldGuidance';
 
 const prompts = [
   ['pricing_power', '公司是否具有定价权？'], ['moat_change', '护城河是否正在扩大或收窄？'],
@@ -10,6 +11,7 @@ const prompts = [
 
 export default function ResearchChecklist() {
   return <Collapse ghost items={[{ key: 'checks', label: '辅助检查提示（不计分、不要求全部填写）', children: <Space direction="vertical" style={{ width: '100%' }}>
+    <FieldGuidance>状态只记录是否已考虑，不代表研究得分；备注写下结论或待验证点即可。</FieldGuidance>
     {prompts.map(([key, label]) => <div key={key} style={{ paddingBottom: 8 }}><Typography.Text>{label}</Typography.Text><div className="plan-form-grid" style={{ marginTop: 6 }}>
       <Form.Item name={['checklist_state', key, 'status']} noStyle><Select allowClear placeholder="选择状态" options={[{ value: 'considered', label: '已考虑' }, { value: 'not_applicable', label: '不适用' }, { value: 'needs_validation', label: '需要验证' }]} /></Form.Item>
       <Form.Item name={['checklist_state', key, 'note']} noStyle><Input placeholder="简短备注（可选）" /></Form.Item>
