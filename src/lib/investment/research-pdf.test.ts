@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { ResearchReport } from './research-report';
-import { renderResearchPdf } from './research-pdf';
+import { getVisibleResearchReportSections, renderResearchPdf } from './research-pdf';
 
 const longEvidence = '公司在最新季度披露的经营数据出现变化，需要结合管理层说明和后续两个季度的数据继续验证。'.repeat(8);
 
@@ -40,6 +40,14 @@ const report: ResearchReport = {
 };
 
 describe('research PDF renderer', () => {
+  it('omits headings for sections that contain no information', () => {
+    expect(getVisibleResearchReportSections({
+      ...report,
+      summary: [], sections: [], checklist: [], hypotheses: [], evidence: [],
+    })).toEqual([]);
+    expect(getVisibleResearchReportSections(report)).toEqual(['summary', 'research', 'checklist', 'hypotheses', 'evidence']);
+  });
+
   it('renders a non-trivial PDF buffer with a valid signature', async () => {
     const pdf = await renderResearchPdf(report);
     expect(Buffer.isBuffer(pdf)).toBe(true);

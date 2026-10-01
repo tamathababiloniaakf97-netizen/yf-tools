@@ -5,6 +5,18 @@ import type { ResearchReport } from './research-report';
 const colors = { ink: '#172033', muted: '#667085', line: '#D9DEE8', panel: '#F5F7FA', accent: '#315EFB', warning: '#9A6700' };
 const fontPath = resolve(process.cwd(), 'src/assets/fonts/NotoSansSC-Variable.ttf');
 
+export type VisibleResearchReportSection = 'summary' | 'research' | 'checklist' | 'hypotheses' | 'evidence';
+
+export function getVisibleResearchReportSections(report: ResearchReport): VisibleResearchReportSection[] {
+  const sections: VisibleResearchReportSection[] = [];
+  if (report.summary.length) sections.push('summary');
+  if (report.sections.length) sections.push('research');
+  if (report.checklist.length) sections.push('checklist');
+  if (report.hypotheses.length) sections.push('hypotheses');
+  if (report.evidence.length) sections.push('evidence');
+  return sections;
+}
+
 function formatDate(value: string | null) {
   if (!value) return '未注明日期';
   const date = new Date(value);
@@ -116,29 +128,34 @@ export async function renderResearchPdf(report: ResearchReport): Promise<Buffer>
     doc.moveDown(8).fontSize(9).text('个人研究记录，不构成投资建议。', { align: 'center' });
 
     doc.addPage();
-    drawSectionHeading(doc, '核心摘要');
-    if (report.summary.length) report.summary.forEach((item) => drawLabeledText(doc, item.label, item.value));
-    else doc.fillColor(colors.muted).fontSize(10).text('暂无记录');
+    const visibleSections = new Set(getVisibleResearchReportSections(report));
+    if (visibleSections.has('summary')) {
+      drawSectionHeading(doc, '核心摘要');
+      report.summary.forEach((item) => drawLabeledText(doc, item.label, item.value));
+    }
 
-    drawSectionHeading(doc, '公司研究');
-    if (report.sections.length) report.sections.forEach((item) => drawLabeledText(doc, item.label, item.value));
-    else doc.fillColor(colors.muted).fontSize(10).text('暂无记录');
+    if (visibleSections.has('research')) {
+      drawSectionHeading(doc, '公司研究');
+      report.sections.forEach((item) => drawLabeledText(doc, item.label, item.value));
+    }
 
-    if (report.checklist.length) {
+    if (visibleSections.has('checklist')) {
       drawSectionHeading(doc, '辅助检查');
       report.checklist.forEach((item) => drawRecordCard(doc, item.label, [{ label: '状态', value: item.statusLabel }, { label: '备注', value: item.note }]));
     }
 
-    drawSectionHeading(doc, '假设与验证');
-    if (!report.hypotheses.length) doc.fillColor(colors.muted).fontSize(10).text('暂无记录');
-    report.hypotheses.forEach((item) => drawRecordCard(doc, item.statement, [
-      { label: '状态', value: item.statusLabel }, { label: '关键变量', value: item.keyVariables },
-      { label: '下次检查', value: item.nextCheckAt ? formatDate(item.nextCheckAt) : '未设置' },
-    ]));
+    if (visibleSections.has('hypotheses')) {
+      drawSectionHeading(doc, '假设与验证');
+      report.hypotheses.forEach((item) => drawRecordCard(doc, item.statement, [
+        { label: '状态', value: item.statusLabel }, { label: '关键变量', value: item.keyVariables },
+        { label: '下次检查', value: item.nextCheckAt ? formatDate(item.nextCheckAt) : '未设置' },
+      ]));
+    }
 
-    drawSectionHeading(doc, '证据记录');
-    if (!report.evidence.length) doc.fillColor(colors.muted).fontSize(10).text('暂无记录');
-    report.evidence.forEach((item, index) => drawEvidenceCard(doc, index, item));
+    if (visibleSections.has('evidence')) {
+      drawSectionHeading(doc, '证据记录');
+      report.evidence.forEach((item, index) => drawEvidenceCard(doc, index, item));
+    }
 
     drawSectionHeading(doc, '资料缺口');
     const gapLines = [
