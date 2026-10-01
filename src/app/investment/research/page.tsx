@@ -8,6 +8,7 @@ import ResearchEditor from './components/ResearchEditor';
 import HypothesisEvidencePanel from './components/HypothesisEvidencePanel';
 import SnapshotList from './components/SnapshotList';
 import CompanyDecisionList from './components/CompanyDecisionList';
+import ResearchPdfExportButton from './components/ResearchPdfExportButton';
 
 export default function ResearchPage() {
   const { message } = App.useApp(); const [newForm] = Form.useForm();
@@ -20,7 +21,7 @@ export default function ResearchPage() {
   return <AuthGuard><div className="page-heading"><div><Typography.Title level={2}>公司研究</Typography.Title><Typography.Text type="secondary">用核心问题防止遗漏；证据和快照保留判断形成的过程。</Typography.Text></div><Button type="primary" icon={<PlusOutlined />} onClick={() => setCreating(true)}>新建研究</Button></div>
     {error && <Alert type="warning" showIcon message="研究模块暂时不可用" description={`${error}。结构化研究与快照需要执行迁移 010。`} style={{ marginBottom: 16 }} />}
     <Row gutter={[16, 16]}><Col xs={24} lg={6}><Card title={`研究公司 · ${profiles.length}`}>{profiles.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无研究档案" /> : <List dataSource={profiles} renderItem={(profile) => <List.Item className={selected?.id === profile.id ? 'research-selected' : ''} onClick={() => setSelected(profile)}><Typography.Text strong>{profile.asset_name}</Typography.Text></List.Item>} />}</Card></Col>
-      <Col xs={24} lg={18}>{!selected ? <Card><Empty description="选择或新建一家公司" /></Card> : <><Card style={{ marginBottom: 16 }}><Typography.Title level={3}>{selected.asset_name}</Typography.Title><Typography.Text type="secondary">最近更新：{new Date(selected.updated_at).toLocaleString('zh-CN')}</Typography.Text>{selected.current_judgment && <Typography.Paragraph style={{ marginTop: 12 }}>{selected.current_judgment}</Typography.Paragraph>}</Card><Tabs items={[
+      <Col xs={24} lg={18}>{!selected ? <Card><Empty description="选择或新建一家公司" /></Card> : <><Card style={{ marginBottom: 16 }} extra={<ResearchPdfExportButton profileId={selected.id} assetName={selected.asset_name} />}><Typography.Title level={3}>{selected.asset_name}</Typography.Title><Typography.Text type="secondary">最近更新：{new Date(selected.updated_at).toLocaleString('zh-CN')}</Typography.Text>{selected.current_judgment && <Typography.Paragraph style={{ marginTop: 12 }}>{selected.current_judgment}</Typography.Paragraph>}</Card><Tabs items={[
         { key: 'current', label: '当前研究', children: <ResearchEditor initial={selected} saving={saving} onSubmit={save} /> },
         { key: 'evidence', label: '假设与证据', children: <HypothesisEvidencePanel profile={selected} /> },
         { key: 'snapshots', label: '研究快照', children: <SnapshotList profile={selected} /> },
