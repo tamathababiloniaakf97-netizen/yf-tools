@@ -1,17 +1,7 @@
-export const planStatuses = [
-  'not_started',
-  'in_progress',
-  'completed',
-  'paused',
-  'overdue',
-  'cancelled',
-] as const;
-
-export const planDomains = ['investment', 'annual_goal', 'life'] as const;
-export const planTypes = ['validation', 'research', 'trade', 'action', 'decision', 'life'] as const;
 export const sourceTypes = ['manual', 'codex', 'automation', 'system'] as const;
 export const reviewStatuses = ['pending', 'approved', 'rejected'] as const;
 export const goalTypes = ['result', 'project', 'habit', 'direction'] as const;
+export const goalCategories = ['health_energy', 'family_parenting', 'career_creation', 'finance_investment', 'learning_reading', 'interests_experiences', 'relationships_social'] as const;
 export const relationshipTypes = ['family', 'friend', 'classmate', 'work', 'professional', 'other'] as const;
 export const birthdayCalendars = ['solar', 'lunar'] as const;
 export const interactionTypes = ['contact', 'gift_given', 'gift_received', 'advice_received', 'advice_given', 'help_received', 'help_given', 'other'] as const;
@@ -21,13 +11,13 @@ export const investmentDecisionStatuses = ['draft', 'finalized'] as const;
 export const investmentDecisionTypes = ['buy', 'add', 'hold', 'reduce', 'sell', 'watch', 'skip'] as const;
 export const researchHypothesisStatuses = ['unverified', 'supported', 'challenged', 'inconclusive'] as const;
 export const researchChecklistStatuses = ['considered', 'not_applicable', 'needs_validation'] as const;
+export const researchMaterialTypes = ['fact', 'news', 'viewpoint', 'report_excerpt'] as const;
+export const researchFields = ['business_model', 'customer_value', 'competitive_advantage', 'long_term_assumptions', 'invalidation_conditions', 'earnings_quality', 'management_culture', 'current_judgment', 'risks', 'unknowns', 'investment_thesis'] as const;
 
-export type PlanStatus = typeof planStatuses[number];
-export type PlanDomain = typeof planDomains[number];
-export type PlanType = typeof planTypes[number];
 export type SourceType = typeof sourceTypes[number];
 export type ReviewStatus = typeof reviewStatuses[number];
 export type GoalType = typeof goalTypes[number];
+export type GoalCategory = typeof goalCategories[number];
 export type RelationshipType = typeof relationshipTypes[number];
 export type BirthdayCalendar = typeof birthdayCalendars[number];
 export type InteractionType = typeof interactionTypes[number];
@@ -38,36 +28,8 @@ export type InvestmentDecisionType = typeof investmentDecisionTypes[number];
 export type InvestmentReviewDecisionType = 'buy' | 'sell' | 'hold' | 'skip';
 export type ResearchHypothesisStatus = typeof researchHypothesisStatuses[number];
 export type ResearchChecklistStatus = typeof researchChecklistStatuses[number];
-
-export interface Plan {
-  id: string;
-  user_id: string;
-  title: string;
-  description: string;
-  plan_type: PlanType;
-  domain: PlanDomain;
-  project_id: string | null;
-  start_date: string | null;
-  due_date: string | null;
-  reminder_at: string | null;
-  recurrence_rule: string | null;
-  status: PlanStatus;
-  is_weekly_focus: boolean;
-  notes: string;
-  source_type: SourceType;
-  source_ref: string | null;
-  review_status: ReviewStatus;
-  completed_at: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export type PlanInput = Pick<Plan, 'title' | 'plan_type' | 'domain'> &
-  Partial<Pick<Plan,
-    'description' | 'project_id' | 'start_date' | 'due_date' | 'reminder_at' |
-    'recurrence_rule' | 'status' | 'is_weekly_focus' | 'notes' | 'source_type' |
-    'source_ref' | 'review_status'
-  >>;
+export type ResearchMaterialType = typeof researchMaterialTypes[number];
+export type ResearchField = typeof researchFields[number];
 
 export interface Goal {
   id: string;
@@ -76,10 +38,12 @@ export interface Goal {
   year: number;
   description: string;
   goal_type: GoalType;
+  category?: GoalCategory | null;
   completion_criteria: string;
   current_state: string;
   current_milestone: string;
   next_action: string;
+  next_action_due_at: string | null;
   target_value: number | null;
   current_value: number | null;
   value_unit: string;
@@ -96,9 +60,28 @@ export interface Goal {
 }
 
 export type GoalInput = Pick<Goal, 'title' | 'year'> & Partial<Pick<Goal,
-  'description' | 'goal_type' | 'completion_criteria' | 'current_state' | 'current_milestone' | 'next_action' | 'target_value' | 'current_value' |
+  'description' | 'goal_type' | 'category' | 'completion_criteria' | 'current_state' | 'current_milestone' | 'next_action' | 'next_action_due_at' | 'target_value' | 'current_value' |
   'value_unit' | 'habit_target_count' | 'habit_completed_count' | 'habit_period' |
   'last_progress_at' | 'status' | 'source_type' | 'source_ref' | 'review_status'
+>>;
+
+export interface GoalProgressUpdate {
+  id: string;
+  user_id: string;
+  goal_id: string;
+  occurred_at: string;
+  progress_note: string;
+  current_state: string;
+  current_milestone: string;
+  next_action: string;
+  next_action_due_at: string | null;
+  current_value: number | null;
+  habit_completed_count: number | null;
+  created_at: string;
+}
+
+export type GoalProgressInput = Pick<GoalProgressUpdate, 'occurred_at' | 'progress_note' | 'next_action'> & Partial<Pick<GoalProgressUpdate,
+  'current_state' | 'current_milestone' | 'next_action_due_at' | 'current_value' | 'habit_completed_count'
 >>;
 
 export interface Contact {
@@ -217,6 +200,34 @@ export interface EvidenceInput {
   source_type?: SourceType;
   source_ref?: string | null;
   review_status?: ReviewStatus;
+  material_id?: string | null;
+  research_field?: ResearchField | null;
+}
+
+export interface ResearchMaterialInput {
+  material_type: ResearchMaterialType;
+  title: string;
+  content: string;
+  asset_name?: string | null;
+  source_name?: string | null;
+  source_url?: string | null;
+  source_date?: string | null;
+  personal_note?: string | null;
+  image_paths?: string[];
+}
+
+export interface ResearchMaterial extends ResearchMaterialInput {
+  id: string;
+  user_id: string;
+  asset_name: string | null;
+  source_name: string | null;
+  source_url: string | null;
+  source_date: string | null;
+  personal_note: string | null;
+  image_paths: string[];
+  image_urls?: string[];
+  created_at: string;
+  updated_at: string;
 }
 
 export interface ResearchProfile {
@@ -385,3 +396,38 @@ export interface MethodologyItem extends MethodologyInput {
   created_at: string;
   updated_at: string;
 }
+
+export interface LifeReinforcementProject {
+  id: string;
+  user_id: string;
+  name: string;
+  long_term_goal: string;
+  practical_method: string;
+  stages: string[];
+  default_key: string | null;
+  is_default: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export type LifeReinforcementProjectInput = Pick<LifeReinforcementProject, 'name'> & Partial<Pick<LifeReinforcementProject,
+  'long_term_goal' | 'practical_method' | 'stages' | 'is_active'
+>>;
+
+export interface LifeTrainingRecord {
+  id: string;
+  user_id: string;
+  project_id: string;
+  trained_on: string;
+  stage_name: string;
+  session_goal: string;
+  activity: string;
+  result_notes: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type LifeTrainingRecordInput = Pick<LifeTrainingRecord, 'trained_on' | 'activity'> & Partial<Pick<LifeTrainingRecord,
+  'stage_name' | 'session_goal' | 'result_notes'
+>>;

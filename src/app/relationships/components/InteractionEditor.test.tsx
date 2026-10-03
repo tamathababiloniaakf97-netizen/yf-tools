@@ -24,4 +24,11 @@ describe('InteractionEditor', () => {
     fireEvent.click(await screen.findByText('我送礼/表达感谢'));
     expect(await screen.findByPlaceholderText(/事由、礼物、对方回应/)).toBeInTheDocument();
   });
+
+  it('starts a new follow-up plan instead of carrying over the completed one', () => {
+    render(<InteractionEditor contact={{ ...contact, next_action: '联系对方', next_contact_at: '2026-09-30' }} saving={false} onCancel={vi.fn()} onSubmit={vi.fn()} />);
+
+    expect(screen.getByLabelText('我的下一步行动')).toHaveValue('');
+    expect(screen.getByLabelText('计划联系日期')).toHaveValue('');
+  });
 });

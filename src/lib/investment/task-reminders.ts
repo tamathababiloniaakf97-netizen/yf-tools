@@ -1,5 +1,5 @@
 import type { InvestmentTask } from '@/types/life-os';
-import type { DueReminder } from '@/lib/reminders/due-reminders';
+import type { DueReminder } from '@/lib/reminders/types';
 
 function shanghaiDate(date: Date) {
   const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(date);

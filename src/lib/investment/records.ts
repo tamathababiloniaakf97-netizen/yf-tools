@@ -1,18 +1,17 @@
+import { researchFields } from '@/types/life-os';
 import type { EvidenceInput, InvestmentReviewInput, MethodologyInput, WatchlistInput } from '@/types/life-os';
 
 export function validateWatchlistInput(input: WatchlistInput) {
   const errors: string[] = [];
-  if (!input.asset_name?.trim()) errors.push('请填写标的名称');
-  if (!input.reason?.trim()) errors.push('请填写关注原因');
-  if (!input.entry_condition?.trim()) errors.push('请填写等待条件');
+  if (!input.asset_name?.trim()) errors.push('请填写关注事项');
   if (errors.length) return { ok: false as const, errors };
   return {
     ok: true as const,
     value: {
       ...input,
       asset_name: input.asset_name.trim(),
-      reason: input.reason.trim(),
-      entry_condition: input.entry_condition.trim(),
+      reason: input.reason?.trim() ?? '',
+      entry_condition: input.entry_condition?.trim() ?? '',
       status: input.status ?? 'watching',
       notes: input.notes?.trim() ?? '',
       source_type: input.source_type ?? 'manual',
@@ -26,6 +25,7 @@ export function normalizeEvidenceInput(input: EvidenceInput) {
   if (!input.asset_name?.trim()) errors.push('请填写标的名称');
   if (!input.content?.trim()) errors.push('请填写证据内容');
   if (input.source_type === 'automation' && !input.source_ref?.trim()) errors.push('自动化写入必须保留来源标识');
+  if (input.research_field && !(researchFields as readonly string[]).includes(input.research_field)) errors.push('请选择有效的当前研究栏目');
   if (errors.length) return { ok: false as const, errors };
   return {
     ok: true as const,
@@ -34,6 +34,8 @@ export function normalizeEvidenceInput(input: EvidenceInput) {
       asset_name: input.asset_name.trim(),
       content: input.content.trim(),
       source_name: input.source_name?.trim() ?? '',
+      material_id: input.material_id?.trim() || null,
+      research_field: input.research_field ?? null,
       source_type: input.source_type ?? 'manual',
       review_status: input.review_status ?? (input.source_type === 'automation' ? 'pending' : 'approved'),
     },

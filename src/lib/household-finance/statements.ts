@@ -12,8 +12,12 @@ export function periodBounds(year: number, mode: 'month' | 'quarter' | 'year', i
   return { start: date(new Date(Date.UTC(year, startMonth, 1))), end: date(new Date(Date.UTC(year, endMonth, 0))) };
 }
 
+export function entriesWithinBounds<T extends { entry_date: string }>(entries: T[], bounds: { start: string; end: string }) {
+  return entries.filter((entry) => entry.entry_date >= bounds.start && entry.entry_date <= bounds.end);
+}
+
 export function buildHouseholdStatements(input: StatementInput): HouseholdStatements {
-  const entries = input.entries.filter(entry => entry.entry_date >= input.start && entry.entry_date <= input.end);
+  const entries = entriesWithinBounds(input.entries, input);
   const sum = (...kinds: string[]) => entries.filter(entry => kinds.includes(entry.kind)).reduce((total, entry) => total + Number(entry.amount_cny), 0);
   const businessIncome = sum('business_income') - sum('business_refund');
   const businessExpense = sum('business_expense');

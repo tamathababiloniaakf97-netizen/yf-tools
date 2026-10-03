@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { EvidenceRecord, ResearchHypothesis, ResearchProfile } from '@/types/life-os';
+import type { EvidenceRecord, ResearchHypothesis, ResearchMaterial, ResearchProfile } from '@/types/life-os';
 import { buildResearchPdfFilename, buildResearchReport } from './research-report';
 
 const profile: ResearchProfile = {
@@ -31,6 +31,25 @@ function evidence(overrides: Partial<EvidenceRecord>): EvidenceRecord {
 }
 
 describe('company research report', () => {
+  it('groups only cited materials under their current-research fields for discussion', () => {
+    const material = {
+      id: 'm1', user_id: 'user-1', material_type: 'report_excerpt', title: '客户续约率保持稳定', content: '财报原文',
+      asset_name: '腾讯/控股', source_name: '2026年中报', source_url: null, source_date: '2026-09-28',
+      personal_note: '仍需观察提价后的流失情况', image_paths: [], created_at: '', updated_at: '',
+    } as ResearchMaterial;
+    const report = buildResearchReport({
+      profile, hypotheses: [], materials: [material], exportedAt: '2026-10-01T08:00:00.000Z',
+      evidence: [
+        evidence({ id: 'c1', content: '续约率连续三个季度稳定', impact: 'support', material_id: 'm1', research_field: 'customer_value' }),
+        evidence({ id: 'g1', content: '普通公司证据', material_id: 'm1' }),
+      ],
+    });
+    expect(report.currentResearchCitations).toEqual([{
+      fieldLabel: '客户价值', items: [{ title: '客户续约率保持稳定', excerpt: '续约率连续三个季度稳定', impactLabel: '支持', sourceName: '2026年中报', sourceDate: '2026-09-28', personalNote: '仍需观察提价后的流失情况' }],
+    }]);
+    expect(report.evidence.map((item) => item.content)).toEqual(['普通公司证据']);
+  });
+
   it('normalizes labels, hypotheses, evidence order and completeness gaps', () => {
     const report = buildResearchReport({
       profile,

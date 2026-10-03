@@ -84,7 +84,7 @@ describe('LifePage', () => {
     expect(screen.getByRole('heading', { name: '生活补强' })).toBeInTheDocument();
     expect(screen.getByText('表达能力')).toBeInTheDocument();
     expect(screen.getByText('人际关系')).toBeInTheDocument();
-    expect(screen.getByText('形象管理')).toBeInTheDocument();
+    expect(screen.getByText('形象管理与审美')).toBeInTheDocument();
     expect(screen.getByText('组织能力')).toBeInTheDocument();
     expect(screen.getByText('结构化表达 → 短视频实战 → 真实对话')).toBeInTheDocument();
     expect(screen.queryByText('健康管理')).not.toBeInTheDocument();
@@ -135,9 +135,9 @@ const reinforcementItems = [
     method: '每周选择一位值得维护的联系人，回看已记录的近况，准备一个与对方真实情况有关的问题。联系后只记录对方实际表达的事实和自己的下一步行动。',
   },
   {
-    title: '形象管理',
+    title: '形象管理与审美',
     goal: '用稳定、可重复的方案满足不同场景，而不是频繁购买或追逐潮流。',
-    stages: ['基础整洁', '场景穿搭', '稳定个人形象'],
+    stages: ['基础整洁', '场景穿搭', '审美判断与稳定风格'],
     method: '建立出门前检查清单，再用现有衣物分别固定日常、工作和正式场景各一套可重复搭配。只在无法覆盖明确场景时才列出购买项。',
   },
   {

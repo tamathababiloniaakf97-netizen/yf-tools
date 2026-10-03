@@ -21,3 +21,30 @@ export async function POST(request: Request) {
   }
   return NextResponse.json(item, { status: 201 });
 }
+
+export async function PATCH(request: Request) {
+  const supabase = await createServerSideClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: '未登录' }, { status: 401 });
+  const body = await request.json() as { item_type?: keyof typeof tables; id?: string; name?: string; category?: string; owner?: string; note?: string };
+  if (!body.item_type || !tables[body.item_type] || !body.id) return NextResponse.json({ error: '无效项目' }, { status: 400 });
+  if (!body.name?.trim() || !body.category?.trim() || !['self','spouse','joint'].includes(body.owner || '')) return NextResponse.json({ error: '请完整填写名称、类别和归属' }, { status: 400 });
+  const values = { name: body.name.trim(), category: body.category.trim(), owner: body.owner, note: body.note?.trim() || '' };
+  const { data, error } = await supabase.from(tables[body.item_type]).update(values).eq('id', body.id).eq('user_id', user.id).select().maybeSingle();
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!data) return NextResponse.json({ error: '项目不存在或无权操作' }, { status: 404 });
+  return NextResponse.json(data);
+}
+
+export async function DELETE(request: Request) {
+  const supabase = await createServerSideClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: '未登录' }, { status: 401 });
+  const body = await request.json() as { item_type?: keyof typeof tables; id?: string };
+  if (!body.item_type || !tables[body.item_type] || !body.id) return NextResponse.json({ error: '无效项目' }, { status: 400 });
+  const { data, error } = await supabase.from(tables[body.item_type]).delete().eq('id', body.id).eq('user_id', user.id).select().maybeSingle();
+  if (error?.code === '23503') return NextResponse.json({ error: '该负债已有还款流水，不能删除；可以编辑名称或将余额更新为 0' }, { status: 409 });
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!data) return NextResponse.json({ error: '项目不存在或无权操作' }, { status: 404 });
+  return NextResponse.json({ success: true });
+}

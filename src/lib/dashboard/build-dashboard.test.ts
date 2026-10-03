@@ -1,37 +1,54 @@
 import { describe, expect, it } from 'vitest';
-import type { Contact, Plan } from '@/types/life-os';
-import { buildDashboard } from './build-dashboard';
+import type { Contact, Goal, InvestmentTask } from '@/types/life-os';
+import { buildDashboardActions } from './build-dashboard';
 
-function plan(overrides: Partial<Plan>): Plan {
-  return {
-    id: '1', user_id: 'u1', title: '计划', description: '', plan_type: 'action',
-    domain: 'annual_goal', project_id: null, start_date: null, due_date: null,
-    reminder_at: null, recurrence_rule: null, status: 'not_started', is_weekly_focus: false,
-    notes: '', source_type: 'manual', source_ref: null, review_status: 'approved',
-    completed_at: null, created_at: '2026-09-20T00:00:00Z', updated_at: '2026-09-20T00:00:00Z',
-    ...overrides,
-  };
+function task(overrides: Partial<InvestmentTask> = {}): InvestmentTask {
+  return { id: 'task-1', user_id: 'u1', asset_name: '腾讯', task_type: 'research', title: '更新腾讯估值', condition_note: '', reminder_date: '2026-10-01', status: 'pending', notes: '', completed_at: null, source_type: 'manual', source_ref: null, review_status: 'approved', created_at: '', updated_at: '', ...overrides };
 }
 
-describe('buildDashboard', () => {
-  it('limits weekly focus to three items', () => {
-    const result = buildDashboard([1, 2, 3, 4].map((id) => plan({ id: String(id), is_weekly_focus: true })), new Date('2026-09-28T08:00:00+08:00'));
-    expect(result.weeklyFocus).toHaveLength(3);
+function goal(overrides: Partial<Goal> = {}): Goal {
+  return { id: 'goal-1', user_id: 'u1', title: '完成产品升级', year: 2026, description: '', goal_type: 'project', completion_criteria: '', current_state: '', current_milestone: '', next_action: '确定下一轮范围', next_action_due_at: '2026-10-03', target_value: null, current_value: null, value_unit: '', habit_target_count: null, habit_completed_count: null, habit_period: null, last_progress_at: null, status: 'active', source_type: 'manual', source_ref: null, review_status: 'approved', created_at: '', updated_at: '', ...overrides };
+}
+
+function contact(overrides: Partial<Contact> = {}): Contact {
+  return { id: 'contact-1', user_id: 'u1', name: '王律师', relationship_type: 'professional', role: '', met_context: '', family_context: '', work_context: '', important_notes: '', birthday_calendar: null, birthday_year: null, birthday_month: null, birthday_day: null, birthday_is_leap_month: false, birthday_reminder_enabled: true, holiday_contact_reminder_enabled: false, last_contact_at: null, next_contact_at: '2026-10-02', next_action: '确认合同修订意见', notes: '', source_type: 'manual', source_ref: null, review_status: 'approved', created_at: '', updated_at: '', ...overrides };
+}
+
+describe('buildDashboardActions', () => {
+  const now = new Date('2026-10-01T09:00:00+08:00');
+
+  it('normalizes and orders actions from the three owning domains', () => {
+    const actions = buildDashboardActions({ tasks: [task({ reminder_date: '2026-09-30' })], goals: [goal()], contacts: [contact()] }, now);
+    expect(actions.map((item) => item.source)).toEqual(['investment', 'relationship', 'goal']);
+    expect(actions[0]).toMatchObject({ id: 'investment:task-1', title: '更新腾讯估值', context: '腾讯', urgency: 'overdue', href: '/investment/tasks?task=task-1' });
+    expect(actions[1]).toMatchObject({ href: '/relationships', urgency: 'upcoming' });
+    expect(actions[2]).toMatchObject({ href: '/goals', dueDate: '2026-10-03', urgency: 'upcoming' });
   });
 
-  it('separates overdue attention from work completed this week', () => {
-    const result = buildDashboard([
-      plan({ id: 'late', due_date: '2026-09-20', status: 'in_progress' }),
-      plan({ id: 'done', status: 'completed', completed_at: '2026-09-28T07:00:00+08:00' }),
-    ], new Date('2026-09-28T08:00:00+08:00'));
-    expect(result.needsAttention.map((item) => item.id)).toEqual(['late']);
-    expect(result.completedThisWeek.map((item) => item.id)).toEqual(['done']);
+  it('excludes inactive, unapproved, and blank actions', () => {
+    const actions = buildDashboardActions({ tasks: [task({ status: 'completed' }), task({ id: 'pending-review', review_status: 'pending' })], goals: [goal({ status: 'paused' }), goal({ id: 'blank-goal', next_action: '  ' })], contacts: [contact({ review_status: 'pending' }), contact({ id: 'blank-contact', next_action: '' })] }, now);
+    expect(actions).toEqual([]);
   });
 
-  it('keeps relationship follow-ups separate from plan priorities', () => {
-    const contact = { id: 'c1', name: '王律师', next_contact_at: '2026-09-27', review_status: 'approved' } as Contact;
-    const result = buildDashboard([], [contact], new Date('2026-09-28T08:00:00+08:00'));
-    expect(result.relationshipAttention.map((item) => item.id)).toEqual(['c1']);
-    expect(result.weeklyFocus).toEqual([]);
+  it('sorts overdue, today, future, and undated actions deterministically', () => {
+    const actions = buildDashboardActions({ tasks: [task({ id: 'future', reminder_date: '2026-10-03' }), task({ id: 'today', reminder_date: '2026-10-01' }), task({ id: 'late', reminder_date: '2026-09-29' }), task({ id: 'undated', reminder_date: null })], goals: [], contacts: [] }, now);
+    expect(actions.map((item) => item.id)).toEqual(['investment:late', 'investment:today', 'investment:future', 'investment:undated']);
+  });
+
+  it('adds a finance entry-review action that links to its owning month', () => {
+    const actions = buildDashboardActions({
+      tasks: [], goals: [], contacts: [],
+      financeReminder: { periodKey: '2026-09', periodMonth: '2026-09-01', month: 9, dueDate: '2026-10-07', overdue: false, statusLabel: '上月补录', completedCount:5, totalCount:8, missingLabels:['还款记录','负债余额','月度结账'] },
+    }, now);
+
+    expect(actions).toEqual([expect.objectContaining({
+      id: 'finance-entry-review:2026-09',
+      source: 'finance',
+      title: '检查并补齐 9 月财务录入',
+      href: '/finance?tab=entry&period=2026-09',
+      urgency: 'upcoming',
+      statusLabel: '上月补录',
+      context: '已完成 5/8；未完成：还款记录、负债余额、月度结账',
+    })]);
   });
 });

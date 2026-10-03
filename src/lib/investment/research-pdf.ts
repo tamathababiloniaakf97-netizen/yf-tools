@@ -5,12 +5,13 @@ import type { ResearchReport } from './research-report';
 const colors = { ink: '#172033', muted: '#667085', line: '#D9DEE8', panel: '#F5F7FA', accent: '#315EFB', warning: '#9A6700' };
 const fontPath = resolve(process.cwd(), 'src/assets/fonts/NotoSansSC-Variable.ttf');
 
-export type VisibleResearchReportSection = 'summary' | 'research' | 'checklist' | 'hypotheses' | 'evidence';
+export type VisibleResearchReportSection = 'summary' | 'research' | 'citations' | 'checklist' | 'hypotheses' | 'evidence';
 
 export function getVisibleResearchReportSections(report: ResearchReport): VisibleResearchReportSection[] {
   const sections: VisibleResearchReportSection[] = [];
   if (report.summary.length) sections.push('summary');
   if (report.sections.length) sections.push('research');
+  if (report.currentResearchCitations.length) sections.push('citations');
   if (report.checklist.length) sections.push('checklist');
   if (report.hypotheses.length) sections.push('hypotheses');
   if (report.evidence.length) sections.push('evidence');
@@ -103,6 +104,14 @@ function drawEvidenceCard(doc: PDFKit.PDFDocument, index: number, item: Research
   doc.y = top + height + 9;
 }
 
+function drawCitationCard(doc: PDFKit.PDFDocument, item: ResearchReport['currentResearchCitations'][number]['items'][number]) {
+  drawRecordCard(doc, item.title, [
+    { label: '关键摘录', value: item.excerpt }, { label: '作用', value: item.impactLabel },
+    { label: '来源', value: [item.sourceName, item.sourceDate].filter(Boolean).join(' · ') || '来源未记录' },
+    { label: '我的理解', value: item.personalNote },
+  ]);
+}
+
 function drawFooter(doc: PDFKit.PDFDocument, company: string, pageNumber: number, pageCount: number) {
   const y = doc.page.height - doc.page.margins.bottom - 15;
   doc.save().fontSize(8).fillColor(colors.muted).text(company, doc.page.margins.left, y, { width: 280, lineBreak: false });
@@ -137,6 +146,15 @@ export async function renderResearchPdf(report: ResearchReport): Promise<Buffer>
     if (visibleSections.has('research')) {
       drawSectionHeading(doc, '公司研究');
       report.sections.forEach((item) => drawLabeledText(doc, item.label, item.value));
+    }
+
+    if (visibleSections.has('citations')) {
+      drawSectionHeading(doc, '当前研究引用资料');
+      report.currentResearchCitations.forEach((group) => {
+        ensureSpace(doc, 180);
+        drawLabeledText(doc, group.fieldLabel, `${group.items.length} 条引用资料`);
+        group.items.forEach((item) => drawCitationCard(doc, item));
+      });
     }
 
     if (visibleSections.has('checklist')) {

@@ -16,7 +16,7 @@ create or replace function public.record_household_repayment(
   p_entry_date date, p_liability_id uuid, p_principal numeric, p_interest numeric,
   p_currency text, p_original_principal numeric, p_original_interest numeric, p_fx_rate numeric, p_note text
 ) returns uuid language plpgsql security invoker set search_path = public as $$
-declare v_group_id uuid := uuid_generate_v4();
+declare v_group_id uuid := gen_random_uuid();
 begin
   if not exists(select 1 from household_liabilities where id=p_liability_id and user_id=auth.uid()) then raise exception '负债不存在或无权操作'; end if;
   if exists(select 1 from household_period_closures where user_id=auth.uid() and period_month=date_trunc('month', p_entry_date)::date and status='closed') then raise exception '该月份已结账，请先重新打开月份'; end if;

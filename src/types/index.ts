@@ -201,6 +201,37 @@ export interface AccountSummary {
   leverageMultiple?: number;
 }
 
+export type PortfolioAccountType = 'brokerage' | 'bank' | 'crypto_wallet' | 'other';
+
+export interface PortfolioAccountCashBalance {
+  currency: string;
+  amount: number;
+  usd_rate: number;
+}
+
+export interface PortfolioAccountPositionAllocation {
+  ticker_id: string;
+  quantity: number;
+}
+
+export interface PortfolioAccountLocation {
+  id?: string;
+  user_id?: string;
+  name: string;
+  account_type: PortfolioAccountType;
+  login_url: string;
+  login_account: string;
+  password_hint: string;
+  two_factor_hint: string;
+  location_note: string;
+  broker_reported_total_usd: number | null;
+  cash_balances: PortfolioAccountCashBalance[];
+  positions: PortfolioAccountPositionAllocation[];
+  sort_order: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface CostBasisResult {
   costPerShare: number;
   totalCost: number;

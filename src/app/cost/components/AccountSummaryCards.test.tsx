@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
 import AccountSummaryCards from './AccountSummaryCards';
 import type { AccountSummary } from '@/types';
 
@@ -19,5 +19,12 @@ describe('AccountSummaryCards', () => {
   it('hides performance values before opening setup', () => {
     render(<AccountSummaryCards summary={{ ...summary, openingConfigured: false, netContributions: null, cumulativePnl: null, xirr: null }} loading={false} />);
     expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('opens account distribution from the net-assets card only', async () => {
+    const onOpenAccountDistribution = vi.fn();
+    render(<AccountSummaryCards summary={summary} loading={false} onOpenAccountDistribution={onOpenAccountDistribution} />);
+    fireEvent.click(screen.getByRole('button', { name: '查看账户分布' }));
+    expect(onOpenAccountDistribution).toHaveBeenCalledOnce();
   });
 });

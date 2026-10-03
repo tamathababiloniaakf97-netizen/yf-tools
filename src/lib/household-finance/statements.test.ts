@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildHouseholdStatements, cnyAmount, periodBounds } from './statements';
+import { buildHouseholdStatements, cnyAmount, entriesWithinBounds, periodBounds } from './statements';
 
 describe('household finance statements', () => {
   it('locks an entered foreign currency amount to its manual exchange rate', () => {
@@ -10,6 +10,14 @@ describe('household finance statements', () => {
     expect(periodBounds(2026, 'month', 2)).toEqual({ start: '2026-02-01', end: '2026-02-28' });
     expect(periodBounds(2026, 'quarter', 3)).toEqual({ start: '2026-07-01', end: '2026-09-30' });
     expect(periodBounds(2026, 'year', 1)).toEqual({ start: '2026-01-01', end: '2026-12-31' });
+  });
+
+  it('shows only entries whose cash-event date is inside the selected period', () => {
+    const entries = [
+      { entry_date: '2026-09-30', kind: 'business_income' as const, amount_cny: 100 },
+      { entry_date: '2026-10-01', kind: 'business_income' as const, amount_cny: 200 },
+    ];
+    expect(entriesWithinBounds(entries, { start: '2026-10-01', end: '2026-10-31' })).toEqual([entries[1]]);
   });
 
   it('counts household income and keeps repayments and investment transfers out of income', () => {

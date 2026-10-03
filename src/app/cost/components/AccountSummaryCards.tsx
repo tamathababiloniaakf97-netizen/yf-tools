@@ -1,13 +1,13 @@
 'use client';
 
 import React from 'react';
-import { Card, Col, Row, Statistic } from 'antd';
+import { Button, Card, Col, Row, Statistic } from 'antd';
 import { DollarOutlined, FundOutlined, PercentageOutlined, RiseOutlined, WalletOutlined } from '@ant-design/icons';
 import type { AccountSummary } from '@/types';
 
-interface Props { summary: AccountSummary | null; loading: boolean; }
+interface Props { summary: AccountSummary | null; loading: boolean; onOpenAccountDistribution?: () => void; }
 
-export default function AccountSummaryCards({ summary, loading }: Props) {
+export default function AccountSummaryCards({ summary, loading, onOpenAccountDistribution }: Props) {
   if (!summary) return null;
   const configured = summary.openingConfigured === true;
   const cashRatio = summary.totalAssets !== 0 ? summary.cashBalance / summary.totalAssets * 100 : null;
@@ -24,7 +24,7 @@ export default function AccountSummaryCards({ summary, loading }: Props) {
     {cards.map(card => <Col xs={24} sm={12} md={8} lg={4} key={card.title}>
       <Card size="small" loading={loading} hoverable><div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
         {card.icon}<Statistic title={card.title} value={card.value} precision={card.precision} prefix={card.prefix} suffix={card.suffix} styles={{ content: { fontSize: 18 } }} />
-      </div></Card>
+      </div>{card.title === '账户净资产' && onOpenAccountDistribution ? <Button type="link" size="small" style={{ paddingInline: 0, marginTop: 4 }} onClick={onOpenAccountDistribution}>查看账户分布</Button> : null}</Card>
     </Col>)}
   </Row>;
 }

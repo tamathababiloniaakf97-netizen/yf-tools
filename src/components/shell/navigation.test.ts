@@ -13,12 +13,16 @@ describe('lifeOsNavigation', () => {
     expect(paths).not.toContain('/strategy');
     expect(paths).not.toContain('/execution');
     expect(paths).not.toContain('/about');
+    expect(paths).not.toContain('/plans');
+    expect(lifeOsNavigation.map((item) => item.label)).not.toContain('计划管理');
   });
 
-  it('marks later modules as unavailable without hiding their direction', () => {
+  it('makes life reinforcement available while keeping global review for later', () => {
+    const life = lifeOsNavigation.find((item) => item.key === 'life');
     const futureItems = lifeOsNavigation.filter((item) => item.phase === 'later');
 
-    expect(futureItems.map((item) => item.label)).toEqual(['生活补强', '全局复盘']);
+    expect(life).toMatchObject({ href: '/life', disabled: false, phase: 'now' });
+    expect(futureItems.map((item) => item.label)).toEqual(['全局复盘']);
     expect(futureItems.every((item) => item.disabled)).toBe(true);
   });
 
@@ -42,5 +46,20 @@ describe('lifeOsNavigation', () => {
     expect(investment?.children?.find((item) => item.key === 'investment-decisions')).toMatchObject({
       label: '投资决策', href: '/investment/decisions', disabled: false, phase: 'now',
     });
+  });
+
+  it('makes the research library available', () => {
+    const investment = lifeOsNavigation.find((item) => item.key === 'investment');
+    expect(investment?.children?.find((item) => item.key === 'research-materials')).toMatchObject({
+      label: '研究资料库', href: '/investment/materials', disabled: false, phase: 'now',
+    });
+  });
+
+  it('orders investment navigation from overview and current holdings into attention, research, and review', () => {
+    const investment = lifeOsNavigation.find((item) => item.key === 'investment');
+    expect(investment?.children?.map((item) => item.key)).toEqual([
+      'investment-overview', 'holdings', 'watchlist', 'investment-tasks',
+      'research', 'investment-decisions', 'investment-reviews', 'methodology', 'research-materials',
+    ]);
   });
 });

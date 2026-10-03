@@ -1,5 +1,5 @@
 import type { Contact } from '@/types/life-os';
-import type { DueReminder } from '@/lib/reminders/due-reminders';
+import type { DueReminder } from '@/lib/reminders/types';
 
 const lunarMonths = ['', '正月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '腊月'];
 const lunarFormatter = new Intl.DateTimeFormat('zh-CN-u-ca-chinese', {

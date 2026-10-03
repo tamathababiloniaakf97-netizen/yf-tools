@@ -36,6 +36,7 @@ const report: ResearchReport = {
     occurredAt: `2026-09-${String(28 - index).padStart(2, '0')}`,
     hypothesisStatement: index % 2 ? '企业客户续费率保持稳定' : '新产品能提高客单价',
   })),
+  currentResearchCitations: [{ fieldLabel: '客户价值', items: [{ title: '客户续约率保持稳定', excerpt: '续约率连续三个季度稳定。', impactLabel: '支持', sourceName: '季度报告', sourceDate: '2026-09-28', personalNote: '继续观察提价后的流失率。' }] }],
   gaps: { missingCoreFields: ['盈利质量'], unresolvedHypothesisCount: 2, evidenceWithoutSourceCount: 1 },
 };
 
@@ -43,9 +44,9 @@ describe('research PDF renderer', () => {
   it('omits headings for sections that contain no information', () => {
     expect(getVisibleResearchReportSections({
       ...report,
-      summary: [], sections: [], checklist: [], hypotheses: [], evidence: [],
+      summary: [], sections: [], currentResearchCitations: [], checklist: [], hypotheses: [], evidence: [],
     })).toEqual([]);
-    expect(getVisibleResearchReportSections(report)).toEqual(['summary', 'research', 'checklist', 'hypotheses', 'evidence']);
+    expect(getVisibleResearchReportSections(report)).toEqual(['summary', 'research', 'citations', 'checklist', 'hypotheses', 'evidence']);
   });
 
   it('renders a non-trivial PDF buffer with a valid signature', async () => {

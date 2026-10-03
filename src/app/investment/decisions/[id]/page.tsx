@@ -1,10 +1,11 @@
 'use client';
-import { Alert, App, Button, Card, Select, Spin, Typography } from 'antd';
+import { Alert, App, Button, Card, Select, Space, Spin, Typography } from 'antd';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import AuthGuard from '@/components/AuthGuard';
 import DecisionEditor from '../components/DecisionEditor';
+import DecisionPdfExportButton from '../components/DecisionPdfExportButton';
 import type { InvestmentDecision, InvestmentDecisionInput, ResearchProfile, ResearchSnapshot } from '@/types/life-os';
 
 function emptyDecision(): InvestmentDecision {
@@ -22,6 +23,6 @@ export default function DecisionDetailPage() {
   const save = async (input: InvestmentDecisionInput) => { setSaving(true); try { await persist(input); message.success('决策草稿已保存'); } catch (err) { message.error(err instanceof Error ? err.message : '保存失败'); } finally { setSaving(false); } };
   const finalize = async (input: InvestmentDecisionInput) => { setSaving(true); try { const saved = isNew ? await persist(input) : decision!; const response = await fetch(`/api/investment/decisions/${saved.id}/finalize`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input) }); const data = await response.json(); if (!response.ok) throw new Error(data.error || '定稿失败'); setDecision(data); router.replace(`/investment/decisions/${data.id}`); message.success('投资决策已定稿'); } catch (err) { message.error(err instanceof Error ? err.message : '定稿失败'); } finally { setSaving(false); } };
   const taskHref = decision ? `/investment/tasks?new=1&asset_name=${encodeURIComponent(decision.asset_name)}&task_type=validation&title=${encodeURIComponent(`跟进${decision.asset_name}投资决策`)}&condition_note=${encodeURIComponent(decision.final_reason || decision.error_signals || '')}` : '/investment/tasks';
-  return <AuthGuard><div className="page-heading"><div><Typography.Title level={2}>{decision?.asset_name || '新建投资决策'}</Typography.Title><Typography.Text type="secondary">决策草稿可以不完整保存；定稿前必须完成核心检查。</Typography.Text></div>{decision?.id && <Link href={taskHref}><Button>转成投资待办</Button></Link>}</div>{error && <Alert type="error" showIcon message={error} style={{ marginBottom: 16 }} />}{!decision ? <Card><Spin /></Card> : <>{isNew && <Card title="选择公司研究" style={{ marginBottom: 16 }}><Select style={{ width: '100%' }} value={decision.research_profile_id || undefined} placeholder="选择一家公司" options={profiles.map((item) => ({ value: item.id, label: item.asset_name }))} onChange={(value) => void chooseProfile(value)} /></Card>}<DecisionEditor decision={decision} snapshots={snapshots} saving={saving} onSave={save} onFinalize={finalize} /></>}
+  return <AuthGuard><div className="page-heading"><div><Typography.Title level={2}>{decision?.asset_name || '新建投资决策'}</Typography.Title><Typography.Text type="secondary">决策草稿可以不完整保存；定稿前必须完成核心检查。</Typography.Text></div>{decision?.id && <Space>{decision.status === 'finalized' && <DecisionPdfExportButton decisionId={decision.id} assetName={decision.asset_name} decisionDate={decision.decision_date} />}<Link href={taskHref}><Button>转成投资待办</Button></Link></Space>}</div>{error && <Alert type="error" showIcon message={error} style={{ marginBottom: 16 }} />}{!decision ? <Card><Spin /></Card> : <>{isNew && <Card title="选择公司研究" style={{ marginBottom: 16 }}><Select style={{ width: '100%' }} value={decision.research_profile_id || undefined} placeholder="选择一家公司" options={profiles.map((item) => ({ value: item.id, label: item.asset_name }))} onChange={(value) => void chooseProfile(value)} /></Card>}<DecisionEditor decision={decision} snapshots={snapshots} saving={saving} onSave={save} onFinalize={finalize} /></>}
   </AuthGuard>;
 }

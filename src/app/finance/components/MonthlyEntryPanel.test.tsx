@@ -1,12 +1,35 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { App } from 'antd';
+import dayjs from 'dayjs';
 import { describe, expect, it, vi } from 'vitest';
-import MonthlyEntryPanel, { capitalEntryOptions } from './MonthlyEntryPanel';
+import MonthlyEntryPanel, { capitalEntryOptions, firstBatchEntryDate } from './MonthlyEntryPanel';
 
 describe('MonthlyEntryPanel', () => {
+  it('defaults a historical month entry to that month instead of today', () => {
+    render(<App><MonthlyEntryPanel selectedPeriod="2026-09" entries={[]} liabilities={[]} loading={false} onRefresh={vi.fn()} /></App>);
+    expect(screen.getByLabelText('收付款日期')).toHaveValue('2026-09-30');
+  });
+
+  it('adds multiple business rows before saving them together', () => {
+    render(<App><MonthlyEntryPanel entries={[]} liabilities={[]} loading={false} onRefresh={vi.fn()} /></App>);
+    expect(screen.getAllByText('收付款日期')).toHaveLength(2);
+    expect(screen.getByRole('button', { name: '保存本行' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '新增一行' }));
+    expect(screen.getAllByText('收付款日期')).toHaveLength(3);
+    expect(screen.getAllByRole('button', { name: '保存本行' })).toHaveLength(2);
+    expect(screen.getByRole('button', { name: '一并保存' })).toBeInTheDocument();
+  });
+
+  it('uses the first row date for every new business or household row', () => {
+    const firstDate=dayjs('2026-09-02');
+    const fallback=dayjs('2026-09-30');
+    expect(firstBatchEntryDate([{entry_date:firstDate},{entry_date:dayjs('2026-09-18')}],fallback)).toBe(firstDate);
+    expect(firstBatchEntryDate([{}],fallback)).toBe(fallback);
+  });
+
   it('filters records by tab and exposes family income plus editing', () => {
     render(<App><MonthlyEntryPanel entries={[
-      { id: '1', entry_date: '2026-09-30', kind: 'business_income', amount_cny: 100, note: '经营测试' },
+      { id: '1', entry_date: '2026-09-30', kind: 'business_income', amount_cny: 100, note: '经营测试', created_at: '2026-10-02T01:30:00Z' },
       { id: '2', entry_date: '2026-09-30', kind: 'household_income', amount_cny: 50, note: '家庭测试' },
     ]} liabilities={[]} loading={false} onRefresh={vi.fn()} /></App>);
     expect(screen.getByText('经营收支')).toBeInTheDocument();
@@ -14,6 +37,9 @@ describe('MonthlyEntryPanel', () => {
     expect(screen.getByText('经营测试')).toBeInTheDocument();
     expect(screen.queryByText('家庭测试')).not.toBeInTheDocument();
     expect(screen.getByText('编辑')).toBeInTheDocument();
+    expect(screen.getAllByText('收付款日期').length).toBeGreaterThan(0);
+    expect(screen.getByText('录入时间')).toBeInTheDocument();
+    expect(screen.getByText('2026-10-02 09:30')).toBeInTheDocument();
     fireEvent.click(screen.getByText('家庭收支'));
     expect(screen.getByText('家庭测试')).toBeInTheDocument();
     expect(screen.queryByText('经营测试')).not.toBeInTheDocument();
@@ -31,5 +57,23 @@ describe('MonthlyEntryPanel', () => {
     expect(screen.getAllByText('备注').length).toBeGreaterThan(0);
     expect(screen.queryByText('客户')).not.toBeInTheDocument();
     expect(screen.queryByText('课程')).not.toBeInTheDocument();
+  });
+
+  it('offers batch repayment rows for mortgages, credit loans and credit cards', () => {
+    render(<App><MonthlyEntryPanel entries={[]} liabilities={[{ id:'loan-1', item_type:'liability', category:'房贷', name:'住房贷款', owner:'joint', current_value_cny:100000, valuation_date:'2026-09-30', note:'' }]} loading={false} onRefresh={vi.fn()} /></App>);
+    fireEvent.click(screen.getByText('其他大额事项'));
+    const batchControls = screen.getAllByText('批量还款');
+    fireEvent.click(batchControls[batchControls.length - 1]);
+    expect(screen.getByText('房贷还款')).toBeInTheDocument();
+    expect(screen.getByText('信用贷还款')).toBeInTheDocument();
+    expect(screen.getByText('信用卡还款')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '保存本行' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '新增还款行' }));
+    expect(screen.getAllByRole('button', { name: '保存本行' })).toHaveLength(2);
+    expect(screen.getByRole('button', { name: '一并保存' })).toBeInTheDocument();
+    const principal = screen.getAllByText('本金')[0].closest('.repayment-field');
+    const interest = screen.getAllByText('利息')[0].closest('.repayment-field');
+    expect(principal).not.toBeNull();
+    expect(principal?.parentElement).toBe(interest?.parentElement);
   });
 });

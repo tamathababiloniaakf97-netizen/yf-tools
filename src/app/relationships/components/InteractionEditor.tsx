@@ -14,7 +14,7 @@ function todayInShanghai() { const parts = new Intl.DateTimeFormat('en-US', { ti
 export default function InteractionEditor({ contact, saving, onCancel, onSubmit }: { contact: Contact | null; saving: boolean; onCancel: () => void; onSubmit: (value: ContactInteractionInput) => Promise<void> }) {
   const [form] = Form.useForm<ContactInteractionInput>();
   const interactionType = Form.useWatch('interaction_type', form) ?? 'contact';
-  useEffect(() => { if (contact) { form.resetFields(); form.setFieldsValue({ occurred_at: todayInShanghai(), interaction_type: 'contact', next_action: contact.next_action, next_contact_at: contact.next_contact_at }); } }, [contact, form]);
+  useEffect(() => { if (contact) { form.resetFields(); form.setFieldsValue({ occurred_at: todayInShanghai(), interaction_type: 'contact', next_action: '', next_contact_at: null }); } }, [contact, form]);
   return <Modal title={contact ? `记录往来 · ${contact.name}` : '记录往来'} open={!!contact} confirmLoading={saving} onCancel={onCancel} onOk={() => form.validateFields().then(onSubmit)}><Form form={form} layout="vertical">
     <Form.Item name="interaction_type" label="往来类型" rules={[{ required: true }]}><Select options={Object.entries(interactionLabels).map(([value, label]) => ({ value, label }))} /></Form.Item>
     <Form.Item name="occurred_at" label="往来日期" rules={[{ required: true }]}><Input type="date" /></Form.Item><Form.Item name="summary" label="往来内容" rules={[{ required: true }]}><Input.TextArea rows={4} placeholder={placeholders[interactionType]} /></Form.Item>

@@ -1,5 +1,5 @@
 import type { GoalInput } from '@/types/life-os';
-import { goalTypes } from '@/types/life-os';
+import { goalCategories, goalTypes } from '@/types/life-os';
 
 type GoalValidation = { ok: true; value: GoalInput } | { ok: false; errors: string[] };
 
@@ -9,8 +9,10 @@ export function validateGoalInput(input: GoalInput): GoalValidation {
   if (!title) errors.push('目标不能为空');
   if (!Number.isInteger(input.year) || input.year < 2020 || input.year > 2100) errors.push('年份无效');
   if (!input.goal_type || !goalTypes.includes(input.goal_type)) errors.push('目标类型无效');
+  if (input.category && !goalCategories.includes(input.category)) errors.push('年度板块无效');
   const completionCriteria = input.completion_criteria?.trim();
   const nextAction = input.next_action?.trim();
+  if (input.next_action_due_at && !/^\d{4}-\d{2}-\d{2}$/.test(input.next_action_due_at)) errors.push('行动截止日期无效');
   if (!completionCriteria) errors.push('请填写完成标准');
   if (!nextAction) errors.push('请填写下一步行动');
   if (input.goal_type === 'result') {
@@ -38,6 +40,7 @@ export function validateGoalInput(input: GoalInput): GoalValidation {
       current_state: input.current_state?.trim() ?? '',
       current_milestone: input.current_milestone?.trim() ?? '',
       next_action: nextAction,
+      next_action_due_at: input.next_action_due_at ?? null,
       value_unit: input.value_unit?.trim() ?? '',
       status: input.status ?? 'active',
       source_type: sourceType,

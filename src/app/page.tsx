@@ -1,106 +1,131 @@
 'use client';
 
-import { Alert, Button, Card, Empty, List, Space, Tag, Typography } from 'antd';
-import { ArrowRightOutlined, WalletOutlined } from '@ant-design/icons';
-import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Alert, Button, Card, Empty, List, Skeleton, Space, Tag, Typography } from 'antd';
+import { ArrowRightOutlined } from '@ant-design/icons';
+import Link from 'next/link';
+import { useEffect, useMemo, useState } from 'react';
 import AuthGuard from '@/components/AuthGuard';
-import WeeklyFocus from '@/app/plans/components/WeeklyFocus';
-import { buildDashboard } from '@/lib/dashboard/build-dashboard';
-import type { Contact, Plan, PlanInput, PlanStatus } from '@/types/life-os';
+import DailyThoughtCard from '@/app/components/DailyThoughtCard';
+import TimeProgressCard from '@/app/components/TimeProgressCard';
+import { buildDashboardActions, type DashboardActionSource, type DashboardActionUrgency } from '@/lib/dashboard/build-dashboard';
+import { selectDailyThought } from '@/lib/dashboard/daily-thought';
+import { buildTimeProgress } from '@/lib/dashboard/time-progress';
+import { buildEntryReviewReminder } from '@/lib/household-finance/entry-review-reminder';
+import { actionDeadlineLabel } from '@/lib/dashboard/action-deadline-label';
+import type { HouseholdEntryReview } from '@/types/household-finance';
+import type { Contact, Goal, InvestmentTask } from '@/types/life-os';
 
-const domainLabels = { investment: '投资', annual_goal: '年度目标', life: '生活' } as const;
+const sourceLabels: Record<DashboardActionSource, string> = { investment: '投资', goal: '年度目标', relationship: '人际关系', finance: '家庭财务' };
+const urgencyColors: Record<DashboardActionUrgency, string> = { overdue: 'red', today: 'orange', upcoming: 'blue', undated: 'default' };
+
+function shanghaiDate(date: Date) {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
+}
+
+async function loadSource<T>(url: string, fallback: string): Promise<T[]> {
+  const response = await fetch(url);
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || fallback);
+  return data;
+}
+
+interface EntryReviewStatus {
+  enabled: boolean;
+  startedMonth: string | null;
+  reviews: HouseholdEntryReview[];
+  closedMonths: string[];
+}
+
+async function loadEntryReviewStatus(): Promise<EntryReviewStatus> {
+  const response = await fetch('/api/household-finance/entry-reviews');
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || '财务检查状态加载失败');
+  return data;
+}
 
 export default function HomePage() {
-  const router = useRouter();
-  const [plans, setPlans] = useState<Plan[]>([]);
+  const [tasks, setTasks] = useState<InvestmentTask[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [errors, setErrors] = useState<string[]>([]);
+  const [entryReviewStatus, setEntryReviewStatus] = useState<EntryReviewStatus | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  const loadPlans = useCallback(async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const [planResponse, contactResponse] = await Promise.all([fetch('/api/plans'), fetch('/api/relationships')]);
-      const [planData, contactData] = await Promise.all([planResponse.json(), contactResponse.json()]);
-      if (!planResponse.ok) throw new Error(planData.error || '计划加载失败');
-      setPlans(planData);
-      if (contactResponse.ok) setContacts(contactData);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '计划加载失败');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
-    const timeout = window.setTimeout(() => { void loadPlans(); }, 0);
-    return () => window.clearTimeout(timeout);
-  }, [loadPlans]);
-  const dashboard = useMemo(() => buildDashboard(plans, contacts), [plans, contacts]);
-
-  const updateStatus = async (id: string, status: PlanStatus) => {
-    const plan = plans.find((item) => item.id === id);
-    if (!plan) return;
-    const payload: PlanInput = {
-      title: plan.title, plan_type: plan.plan_type, domain: plan.domain,
-      description: plan.description, project_id: plan.project_id,
-      start_date: plan.start_date, due_date: plan.due_date,
-      reminder_at: plan.reminder_at, recurrence_rule: plan.recurrence_rule,
-      status, is_weekly_focus: plan.is_weekly_focus, notes: plan.notes,
-      source_type: plan.source_type, source_ref: plan.source_ref,
-      review_status: plan.review_status,
+    let active = true;
+    const nowTimer = window.setTimeout(() => {
+      if (active) setNow(new Date());
+    }, 0);
+    const load = async () => {
+      setLoading(true);
+      const results = await Promise.allSettled([
+        loadSource<InvestmentTask>('/api/investment/tasks', '投资待办加载失败'),
+        loadSource<Goal>('/api/goals', '年度目标加载失败'),
+        loadSource<Contact>('/api/relationships', '人际关系加载失败'),
+        loadEntryReviewStatus(),
+      ]);
+      if (!active) return;
+      if (results[0].status === 'fulfilled') setTasks(results[0].value);
+      if (results[1].status === 'fulfilled') setGoals(results[1].value);
+      if (results[2].status === 'fulfilled') setContacts(results[2].value);
+      if (results[3].status === 'fulfilled') setEntryReviewStatus(results[3].value);
+      setErrors(results.flatMap((result) => result.status === 'rejected' ? [result.reason instanceof Error ? result.reason.message : '数据加载失败'] : []));
+      setLoading(false);
     };
-    const response = await fetch(`/api/plans/${id}`, {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
-    });
-    if (response.ok) await loadPlans();
-  };
+    void load();
+    return () => {
+      active = false;
+      window.clearTimeout(nowTimer);
+    };
+  }, []);
+
+  const financeReminder = useMemo(() => now && entryReviewStatus?.enabled
+    ? buildEntryReviewReminder(now, entryReviewStatus.startedMonth, entryReviewStatus.reviews, entryReviewStatus.closedMonths)
+    : null, [entryReviewStatus, now]);
+  const actions = useMemo(() => buildDashboardActions({ tasks, goals, contacts, financeReminder }, now ?? new Date()), [contacts, financeReminder, goals, now, tasks]);
+  const today = useMemo(() => shanghaiDate(now ?? new Date()), [now]);
+  const timeProgress = useMemo(() => now ? buildTimeProgress(now) : null, [now]);
+  const dailyThought = useMemo(() => now ? selectDailyThought(now) : null, [now]);
 
   return (
     <AuthGuard>
       <div className="page-heading">
         <div>
-          <Typography.Title level={2}>本周工作台</Typography.Title>
-          <Typography.Text type="secondary">不安排每天，只盯住最重要的三件事。</Typography.Text>
+          <Typography.Title level={2}>行动工作台</Typography.Title>
+          <Typography.Text type="secondary">汇总各领域需要推进的事，具体处理回到原模块完成。</Typography.Text>
         </div>
-        <Space>
-          <Button icon={<WalletOutlined />} onClick={() => router.push('/cost')}>查看持仓</Button>
-          <Button type="primary" onClick={() => router.push('/plans')}>管理计划</Button>
-        </Space>
       </div>
-      {error && <Alert type="warning" showIcon message="计划模块尚未连接" description="现有持仓仍可正常使用。计划功能需要先执行数据库迁移 003_life_os_core.sql。" style={{ marginBottom: 16 }} />}
-      <WeeklyFocus plans={dashboard.weeklyFocus} onStatusChange={updateStatus} />
-      <div className="dashboard-grid">
-        <PlanSummaryCard title="需要处理" plans={dashboard.needsAttention} empty="目前没有延期事项" danger onOpenPlans={() => router.push('/plans')} />
-        <RelationshipSummaryCard contacts={dashboard.relationshipAttention} onOpen={() => router.push('/relationships')} />
-        <PlanSummaryCard title="正在推进" plans={dashboard.inProgress} empty={loading ? '正在加载' : '目前没有进行中的计划'} onOpenPlans={() => router.push('/plans')} />
-        <PlanSummaryCard title="本周完成" plans={dashboard.completedThisWeek} empty="本周还没有完成记录" completed onOpenPlans={() => router.push('/plans')} />
+      <div className="workbench-insight-grid">
+        {timeProgress && dailyThought ? (
+          <>
+            <TimeProgressCard progress={timeProgress} />
+            <DailyThoughtCard thought={dailyThought} />
+          </>
+        ) : (
+          <>
+            <Card className="workbench-insight-card" aria-label="时间进度加载中"><Skeleton active paragraph={{ rows: 4 }} /></Card>
+            <Card className="workbench-insight-card" aria-label="每日一念加载中"><Skeleton active paragraph={{ rows: 4 }} /></Card>
+          </>
+        )}
       </div>
+      {errors.map((error) => <Alert key={error} type="warning" showIcon message={error} style={{ marginBottom: 12 }} />)}
+      <Card title={`待推进行动 · ${actions.length}`}>
+        {!loading && actions.length === 0 ? <Empty description="暂无待推进行动" /> : (
+          <List loading={loading} dataSource={actions} renderItem={(action) => (
+            <List.Item actions={[
+              <Link key="open" href={action.href} aria-label={`去处理 ${action.title}`}>
+                <Button type="link">去处理 <ArrowRightOutlined /></Button>
+              </Link>,
+            ]}>
+              <List.Item.Meta
+                title={<Space wrap><Typography.Text strong>{action.title}</Typography.Text><Tag>{sourceLabels[action.source]}</Tag><Tag color={urgencyColors[action.urgency]}>{action.statusLabel ?? actionDeadlineLabel(action.dueDate, today)}</Tag></Space>}
+                description={[action.context, action.dueDate].filter(Boolean).join(' · ')}
+              />
+            </List.Item>
+          )} />
+        )}
+      </Card>
     </AuthGuard>
-  );
-}
-
-function RelationshipSummaryCard({ contacts, onOpen }: { contacts: Contact[]; onOpen: () => void }) {
-  return <Card title={`关系跟进 · ${contacts.length}`} extra={<Button type="link" size="small" onClick={onOpen}>查看 <ArrowRightOutlined /></Button>}>
-    {contacts.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无需要联系的人" /> : <List dataSource={contacts.slice(0, 5)} renderItem={(contact) => <List.Item><List.Item.Meta title={contact.name} description={contact.next_action || `下次联系：${contact.next_contact_at}`} /><Tag color="orange">需联系</Tag></List.Item>} />}
-  </Card>;
-}
-
-function PlanSummaryCard({ title, plans, empty, danger, completed, onOpenPlans }: {
-  title: string; plans: Plan[]; empty: string; danger?: boolean; completed?: boolean; onOpenPlans: () => void;
-}) {
-  return (
-    <Card title={`${title} · ${plans.length}`} extra={<Button type="link" size="small" onClick={onOpenPlans}>查看 <ArrowRightOutlined /></Button>}>
-      {plans.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={empty} /> : (
-        <List dataSource={plans.slice(0, 5)} renderItem={(plan) => (
-          <List.Item>
-            <List.Item.Meta title={plan.title} description={`${domainLabels[plan.domain]}${plan.due_date ? ` · ${plan.due_date}` : ''}`} />
-            <Tag color={danger ? 'red' : completed ? 'green' : 'blue'}>{danger ? '需处理' : completed ? '已完成' : '进行中'}</Tag>
-          </List.Item>
-        )} />
-      )}
-    </Card>
   );
 }

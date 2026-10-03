@@ -1,7 +1,7 @@
 import { buildResearchPdfFilename, buildResearchReport } from '@/lib/investment/research-report';
 import { renderResearchPdf } from '@/lib/investment/research-pdf';
 import { createServerSideClient } from '@/lib/supabase/server';
-import type { EvidenceRecord, ResearchHypothesis, ResearchProfile } from '@/types/life-os';
+import type { EvidenceRecord, ResearchHypothesis, ResearchMaterial, ResearchProfile } from '@/types/life-os';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -25,12 +25,20 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     return Response.json({ error: hypothesisResult.error?.message || evidenceResult.error?.message || '研究资料加载失败' }, { status: 500 });
   }
 
+  const evidence = (evidenceResult.data ?? []) as EvidenceRecord[];
+  const materialIds = [...new Set(evidence.map((item) => item.material_id).filter((id): id is string => Boolean(id)))];
+  const materialResult = materialIds.length
+    ? await supabase.from('research_materials').select('*').eq('user_id', user.id).in('id', materialIds)
+    : { data: [], error: null };
+  if (materialResult.error) return Response.json({ error: materialResult.error.message }, { status: 500 });
+
   try {
     const exportedAt = new Date();
     const report = buildResearchReport({
       profile,
       hypotheses: (hypothesisResult.data ?? []) as ResearchHypothesis[],
-      evidence: (evidenceResult.data ?? []) as EvidenceRecord[],
+      evidence,
+      materials: (materialResult.data ?? []) as ResearchMaterial[],
       exportedAt: exportedAt.toISOString(),
     });
     const pdf = await renderResearchPdf(report);

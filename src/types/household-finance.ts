@@ -67,3 +67,25 @@ export interface HouseholdClosure {
   investment_value_cny: number;
   closed_at?: string;
 }
+
+export interface HouseholdFinanceSettings {
+  enabled_date: string;
+  base_currency: 'CNY';
+  entry_review_started_month: string;
+}
+
+export interface HouseholdEntryReview {
+  period_month: string;
+  reviewed_at: string;
+  checks?: HouseholdEntryReviewChecks;
+}
+
+export interface HouseholdEntryReviewChecks {
+  business?: boolean;
+  household?: boolean;
+  repayments?: boolean;
+  capital?: boolean;
+  cash_balances?: boolean;
+  liability_balances?: boolean;
+  investment_ready?: boolean;
+}

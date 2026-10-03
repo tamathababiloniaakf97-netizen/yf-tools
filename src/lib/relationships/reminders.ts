@@ -1,5 +1,5 @@
 import type { Contact } from '@/types/life-os';
-import type { DueReminder } from '@/lib/reminders/due-reminders';
+import type { DueReminder } from '@/lib/reminders/types';
 import { buildBirthdayReminders } from './birthdays';
 import { traditionalHolidaysForYear } from './holidays';
 

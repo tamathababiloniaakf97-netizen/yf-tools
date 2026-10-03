@@ -7,9 +7,6 @@ import {
   investmentDecisionTypes,
   investmentTaskStatuses,
   investmentTaskTypes,
-  planDomains,
-  planStatuses,
-  planTypes,
   relationshipTypes,
   sourceTypes,
   type Contact,
@@ -20,15 +17,7 @@ import {
 } from './life-os';
 
 describe('Life OS domain values', () => {
-  it('uses one practical status set for every plan view', () => {
-    expect(planStatuses).toEqual([
-      'not_started', 'in_progress', 'completed', 'paused', 'overdue', 'cancelled',
-    ]);
-  });
-
-  it('supports current use cases without inventing extra domains', () => {
-    expect(planDomains).toEqual(['investment', 'annual_goal', 'life']);
-    expect(planTypes).toEqual(['validation', 'research', 'trade', 'action', 'decision', 'life']);
+  it('keeps shared record provenance values', () => {
     expect(sourceTypes).toEqual(['manual', 'codex', 'automation', 'system']);
   });
 
