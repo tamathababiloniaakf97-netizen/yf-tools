@@ -6,6 +6,36 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
+/* 投资日志：左侧检索列表，右侧保持适合长文阅读的行宽。 */
+.investment-journal-shell{height:calc(100vh - 190px);min-height:560px;background:#fff;border:1px solid #e5e9ec;border-radius:10px;overflow:hidden;display:grid}
+.investment-journal-list{min-width:0;border-right:1px solid #e8ecef;display:grid;grid-template-rows:auto 1fr}
+.investment-journal-tools{padding:16px;border-bottom:1px solid #edf0f2;display:grid;gap:12px}
+.investment-journal-tools .ant-segmented-item-label{padding-inline:8px;font-size:12px}
+.investment-journal-feed{overflow:auto}
+.investment-journal-row{width:100%;padding:17px 18px;text-align:left;border:0;border-bottom:1px solid #edf0f2;background:#fff;color:inherit;cursor:pointer;display:grid;gap:7px}
+.investment-journal-row:hover{background:#fafcfb}.investment-journal-row.is-selected{background:#f0f7f5;box-shadow:inset 3px 0 #247064}
+.investment-journal-row-meta{display:flex;align-items:center;justify-content:space-between;color:#8a959f;font-size:12px}
+.investment-journal-row strong{font-size:16px;line-height:1.45}.investment-journal-excerpt{color:#63717d;line-height:1.65;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;white-space:pre-wrap}
+.investment-journal-row-footer{font-size:12px;color:#929ca5}
+.investment-journal-reader{overflow:auto;padding:34px max(5%,28px) 60px}.investment-journal-reader article{max-width:780px;margin:0 auto}
+.investment-journal-article-head{position:relative;padding-bottom:22px;border-bottom:1px solid #e8ecef}.investment-journal-article-head h2{margin:10px 0 10px!important;line-height:1.35!important;padding-right:140px}
+.investment-journal-actions{position:absolute;right:0;top:0;display:flex;gap:8px}.investment-journal-body{margin-top:28px!important;font-size:15px;line-height:1.95!important;white-space:pre-wrap;color:#2c3842}
+.investment-journal-references{border-top:1px solid #e8ecef;margin-top:34px;padding-top:20px}.investment-journal-reference{margin-top:9px;padding:11px 12px;border:1px solid #e5eaed;background:#f8fafb;border-radius:7px;color:#26333c;display:flex;align-items:center;justify-content:space-between;gap:12px}
+/* 投资方法论：左侧检索与选择，右侧专注阅读单条规则。 */
+.methodology-shell{display:grid;min-height:620px;background:#fff;border:1px solid #e7eaec;border-radius:10px;overflow:hidden}.methodology-list{border-right:1px solid #e7eaec;min-width:0}.methodology-tools{padding:16px;border-bottom:1px solid #edf0f2}.methodology-feed{max-height:690px;overflow:auto}.methodology-row{width:100%;padding:16px 18px;border:0;border-bottom:1px solid #edf0f2;background:#fff;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:8px;color:inherit}.methodology-row:hover{background:#f7faf9}.methodology-row.is-selected{background:#eef6f3;box-shadow:inset 3px 0 #236657}.methodology-row-meta{display:flex;align-items:center;gap:4px}.methodology-row strong{font-size:15px;color:#1f2d35}.methodology-excerpt{color:#66747c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.methodology-reader{padding:34px 38px;min-width:0}.methodology-article-head{position:relative;padding-right:150px;border-bottom:1px solid #edf0f2;padding-bottom:22px}.methodology-article-head h2{margin:14px 0 0}.methodology-actions{position:absolute;right:0;top:0;display:flex;gap:8px}.methodology-body{font-size:16px;line-height:1.9;white-space:pre-wrap;margin-top:26px}.methodology-empty{padding:72px 24px;background:#fff;border:1px solid #e7eaec;border-radius:10px}
+.resizable-split-pane{grid-template-columns:minmax(0,var(--split-left-width)) 9px minmax(0,1fr)}
+.resizable-split-divider{position:relative;z-index:1;cursor:col-resize;touch-action:none;outline:none;background:#fff}
+.resizable-split-divider::after{content:"";position:absolute;inset:0 4px;background:#e4e9ec;transition:background .15s}
+.resizable-split-divider:hover::after,.resizable-split-divider:focus-visible::after,.resizable-split-divider.is-dragging::after{background:#6c9e94}
+body.is-resizing-split{cursor:col-resize;user-select:none}
+@media(max-width:900px){.methodology-shell{grid-template-columns:1fr}.methodology-shell>.resizable-split-divider{display:none}.methodology-list{border-right:0;border-bottom:1px solid #e7eaec}.methodology-feed{max-height:360px}.methodology-reader{padding:24px}.methodology-article-head{padding-right:0;padding-top:52px}.methodology-actions{left:0;right:auto}}
+.investment-journal-reference:hover{border-color:#9ec4bc;color:#1e655a}
+@media(max-width:980px){.investment-journal-shell{height:auto;min-height:0;grid-template-columns:1fr}.investment-journal-shell>.resizable-split-divider{display:none}.investment-journal-list{border-right:0}.investment-journal-feed{max-height:420px}.investment-journal-reader{border-top:1px solid #e8ecef;min-height:520px}.investment-journal-article-head h2{padding-right:0}.investment-journal-actions{position:static;margin-top:16px}}
+
+/* 认知提升：复用日志与方法论的主从阅读节奏。 */
+.cognition-shell{height:calc(100vh - 190px);min-height:580px;background:#fff;border:1px solid #e5e9ec;border-radius:10px;overflow:hidden;display:grid}.cognition-list{min-width:0;border-right:1px solid #e7eaec;overflow:hidden}.cognition-tools{padding:16px;border-bottom:1px solid #edf0f2}.cognition-feed{height:calc(100% - 65px);overflow:auto}.cognition-row{width:100%;padding:16px 18px;border:0;border-bottom:1px solid #edf0f2;background:#fff;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:8px;color:inherit}.cognition-row:hover{background:#f7faf9}.cognition-row.is-selected{background:#eef6f3;box-shadow:inset 3px 0 #236657}.cognition-row strong{font-size:15px;color:#1f2d35}.cognition-row>span:last-child{color:#66747c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cognition-reader{padding:34px 38px;min-width:0;overflow:auto}.cognition-body{font-size:16px;line-height:1.9;white-space:pre-wrap;margin-top:26px}.cognition-actions{display:flex;gap:8px;margin-top:28px;padding-top:20px;border-top:1px solid #edf0f2}
+@media(max-width:900px){.cognition-shell{height:auto;min-height:0;grid-template-columns:1fr}.cognition-shell>.resizable-split-divider{display:none}.cognition-list{border-right:0;border-bottom:1px solid #e7eaec}.cognition-feed{max-height:380px}.cognition-reader{min-height:480px;padding:24px}}
+
 .research-material-layout {
   display: grid;
   grid-template-columns: minmax(320px, 0.9fr) minmax(420px, 1.4fr);
@@ -83,6 +113,15 @@ body {
 .ant-table-wrapper {
   overflow-x: auto;
 }
+
+.finance-flow-amount {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.finance-flow-inflow { color: #16865c; }
+.finance-flow-outflow { color: #c2413b; }
+.finance-flow-neutral { color: #667085; }
 
 /* ======== 策略执行页面 ======== */
 .yf-execution-columns {
@@ -296,3 +335,55 @@ body {
     size: A4;
   }
 }
+.market-cycle-summary { margin-bottom: 16px; }
+.market-cycle-summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.market-cycle-summary-item { min-width: 0; border: 1px solid #edf0f3; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 6px; }
+.market-cycle-summary-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.cycle-indicator-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.cycle-indicator-card { border: 1px solid #edf0f3; border-radius: 8px; padding: 14px; }
+.cycle-indicator-card > div:first-child { display: flex; justify-content: space-between; gap: 8px; }
+.cycle-review-row { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+.cycle-review-row:last-child { border-bottom: 0; }
+.cycle-page-heading { padding: 4px 0 8px; }
+.cycle-eyebrow { display: block; color: #6f7c91; font-size: 11px; font-weight: 700; letter-spacing: .16em; margin-bottom: 5px; }
+.cycle-selector { display: grid; grid-template-columns: repeat(auto-fit, minmax(205px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.cycle-selector-card { appearance: none; background: linear-gradient(145deg, #fff, #fafbfd); border: 1px solid #e6eaf0; border-radius: 12px; color: #172033; cursor: pointer; min-height: 112px; padding: 15px 16px; text-align: left; transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease; }
+.cycle-selector-card:hover { border-color: #94b5ec; box-shadow: 0 8px 22px rgba(27, 64, 122, .08); transform: translateY(-1px); }
+.cycle-selector-card.is-active { background: linear-gradient(145deg, #eef5ff, #fff); border-color: #3f7dde; box-shadow: 0 8px 24px rgba(39, 96, 181, .12); }
+.cycle-selector-card > span, .cycle-selector-card > small { display: block; }
+.cycle-selector-card > span:nth-child(2) { color: #465268; font-size: 13px; margin-top: 16px; }
+.cycle-selector-card > small { color: #8b95a5; margin-top: 5px; }
+.cycle-selector-top { align-items: center; display: flex !important; justify-content: space-between; gap: 8px; }
+.cycle-selector-top i { align-items: center; background: #f08a4b; border-radius: 999px; color: #fff; display: inline-flex; font-size: 11px; font-style: normal; height: 20px; justify-content: center; min-width: 20px; padding: 0 5px; }
+.cycle-judgement-card { overflow: hidden; }
+.cycle-judgement-card .ant-card-head { background: linear-gradient(90deg, #f7faff, #fff); }
+.cycle-indicator-card { background: linear-gradient(145deg, #fff, #fbfcfe); border-left: 3px solid #aeb8c8; min-height: 126px; }
+.cycle-indicator-card:has(.ant-tag-red) { border-left-color: #df4d4d; }
+.cycle-indicator-card:has(.ant-tag-orange) { border-left-color: #ee9945; }
+.cycle-indicator-card:has(.ant-tag-green) { border-left-color: #36a06f; }
+.cycle-manager-list > div { align-items: center; border-bottom: 1px solid #edf0f3; display: flex; justify-content: space-between; padding: 12px 0; }
+.cycle-manager-list > div:last-child { border-bottom: 0; }
+.cycle-risk-note { margin-bottom: 16px; }
+.cycle-progress-fields { display: grid; gap: 8px; margin-bottom: 16px; }
+.cycle-progress-heading { align-items: center; justify-content: space-between; width: 100%; }
+.cycle-progress-heading .ant-typography { margin: 0; }
+.cycle-progress-results { background: #f7f9fc; border-radius: 10px; margin-bottom: 12px; padding: 12px; }
+.cycle-phase-prompt { background: #fff8e8; border-left: 3px solid #e7a93c; border-radius: 6px; margin-top: -12px; padding: 10px 12px; }
+.cycle-current-progress { border-bottom: 1px solid #edf0f3; margin-bottom: 14px; }
+.cycle-price-anchor-wrap { background: #f7f9fc; border-radius: 10px; margin-bottom: 14px; padding: 12px 14px; }
+.cycle-price-benchmark { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.cycle-price-anchor-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.cycle-price-anchor-grid > div { display: grid; gap: 3px; }
+.cycle-thought-section + .cycle-thought-section { border-top: 1px solid #edf0f3; margin-top: 14px; padding-top: 14px; }
+.cycle-thought-section > .ant-typography:first-child { display: block; margin-bottom: 8px; }
+.cycle-thought-title, .cycle-section-toolbar { align-items: center; display: flex; justify-content: space-between; gap: 8px; }
+.cycle-section-toolbar { margin-bottom: 8px; }
+.cycle-section-toolbar-end { justify-content: flex-end; margin-bottom: 4px; }
+.cycle-edit-icon { color: #667085; }
+.cycle-edit-icon:hover, .cycle-edit-icon:focus-visible { background: #eaf2ff !important; color: #1677ff !important; }
+.investment-overview-title-row { align-items: center; display: flex; flex-wrap: wrap; gap: 12px 18px; }
+.investment-overview-title-row .ant-typography { margin: 0; }
+.investment-motto { display: inline-flex; flex: 0 0 auto; gap: 7px; }
+.investment-motto-seal { align-items: center; background: #fbfaf7; border: 1px solid #b8bec8; border-radius: 4px; color: #566171; display: inline-flex; font-family: KaiTi, STKaiti, SimSun, serif; font-size: 18px; height: 30px; justify-content: center; line-height: 1; width: 30px; }
+@media (max-width: 900px) { .market-cycle-summary-grid, .cycle-indicator-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .market-cycle-summary-grid, .cycle-indicator-grid { grid-template-columns: 1fr; } .cycle-price-anchor-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .investment-overview-title-row { align-items: flex-start; flex-direction: column; gap: 8px; } }

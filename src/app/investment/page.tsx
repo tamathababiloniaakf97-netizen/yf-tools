@@ -4,13 +4,16 @@ import { Alert, App, Button, Card, Col, Empty, Row, Statistic, Table, Tag, Typog
 import { ArrowRightOutlined, WalletOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import useSWR from 'swr';
 import AuthGuard from '@/components/AuthGuard';
 import { calculateAccountSummary } from '@/lib/cost-engine';
 import { buildInvestmentAttentionItems, type InvestmentAttentionItem } from '@/lib/investment/attention';
 import { buildPortfolioOverview } from '@/lib/investment/overview';
 import InvestmentAttentionCard from './components/InvestmentAttentionCard';
+import InvestmentMotto from './components/InvestmentMotto';
+import MarketCycleSummaryCard from './components/MarketCycleSummaryCard';
 import type { AccountSummary, Ticker, Transaction } from '@/types';
-import type { InvestmentTask, WatchlistItem } from '@/types/life-os';
+import type { InvestmentTask, MarketCycleProfile, WatchlistItem } from '@/types/life-os';
 
 function dateAfter(days: number) {
   const date = new Date();
@@ -23,7 +26,7 @@ function dateAfter(days: number) {
 function taskInput(task: InvestmentTask, changes: Record<string, unknown>) {
   return {
     asset_name: task.asset_name, task_type: task.task_type, title: task.title,
-    condition_note: task.condition_note, reminder_date: task.reminder_date,
+    condition_note: task.condition_note, ticker_id: task.ticker_id, price: task.price, reminder_date: task.reminder_date,
     status: task.status, notes: task.notes, completed_at: task.completed_at,
     source_type: task.source_type, source_ref: task.source_ref,
     review_status: task.review_status, ...changes,
@@ -40,6 +43,7 @@ export default function InvestmentOverviewPage() {
   const [attentionLoading, setAttentionLoading] = useState(true);
   const [error, setError] = useState('');
   const [attentionError, setAttentionError] = useState('');
+  const { data: cycleProfiles = [], error: cycleError, isLoading: cycleLoading } = useSWR<MarketCycleProfile[]>('/api/investment/cycles');
 
   const loadAttention = useCallback(async () => {
     setAttentionLoading(true);
@@ -99,12 +103,13 @@ export default function InvestmentOverviewPage() {
   return (
     <AuthGuard>
       <div className="page-heading">
-        <div><Typography.Title level={2}>投资概览</Typography.Title><Typography.Text type="secondary">只汇总账户结果和需要注意的风险；交易明细仍在原持仓页面。</Typography.Text></div>
+        <div><div className="investment-overview-title-row"><Typography.Title level={2}>投资概览</Typography.Title><InvestmentMotto /></div><Typography.Text type="secondary">只汇总账户结果和需要注意的风险；交易明细仍在原持仓页面。</Typography.Text></div>
         <Button type="primary" icon={<WalletOutlined />} onClick={() => router.push('/cost')}>进入持仓</Button>
       </div>
       {error && <Alert type="error" showIcon message="持仓数据加载失败" description={error} style={{ marginBottom: 16 }} />}
       {attentionError && <Alert type="warning" showIcon message="需要关注的事项暂时无法加载" description={attentionError} style={{ marginBottom: 16 }} />}
       <InvestmentAttentionCard items={attentionItems} loading={attentionLoading} onReview={review} onSnooze={snooze} onComplete={complete} />
+      <MarketCycleSummaryCard profiles={cycleProfiles} loading={cycleLoading} error={cycleError instanceof Error ? cycleError.message : cycleError ? '未知错误' : undefined} />
       <Row gutter={[16, 16]}>
         <Col xs={24} sm={12} xl={6}><Card loading={loading}><Statistic title="总资产" value={summary?.totalAssets ?? 0} precision={2} prefix="$" /></Card></Col>
         <Col xs={24} sm={12} xl={6}><Card loading={loading}><Statistic title="总盈亏" value={summary?.totalPnL ?? 0} precision={2} prefix="$" valueStyle={{ color: (summary?.totalPnL ?? 0) >= 0 ? '#12a06b' : '#cf1322' }} /></Card></Col>
