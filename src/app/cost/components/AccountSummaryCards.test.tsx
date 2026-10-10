@@ -6,13 +6,15 @@ import type { AccountSummary } from '@/types';
 const summary: AccountSummary = {
   totalAssets: 15000, cashBalance: -5000, marketValue: 20000, totalInvested: 12000,
   totalPnL: 3000, pnlPercent: 25, positions: [], openOptions: [], openingConfigured: true,
-  netContributions: 12000, cumulativePnl: 3000, xirr: 18.5, stockExposurePercent: 133.33, leverageMultiple: 1.33,
+  netContributions: 12000, cumulativePnl: 3000, holdingUnrealizedPnl: 3456, xirr: 18.5, stockExposurePercent: 133.33, leverageMultiple: 1.33,
 };
 
 describe('AccountSummaryCards', () => {
-  it('shows exactly the five professional account metrics', () => {
+  it('distinguishes cost-based holding profit from opening-date profit', () => {
     render(<AccountSummaryCards summary={summary} loading={false} />);
-    ['账户净资产', '融资余额/现金占比', '净入金', '累计盈亏', '资金收益率(XIRR)'].forEach(label => expect(screen.getByText(label)).toBeInTheDocument());
+    ['账户净资产', '融资余额/现金占比', '净入金', '持仓浮盈亏', '期初后盈亏', '资金收益率(XIRR)'].forEach(label => expect(screen.getByText(label)).toBeInTheDocument());
+    expect(screen.getByText('当前持仓市值 − 剩余持仓成本')).toBeInTheDocument();
+    expect(screen.getByText('当前净资产 − 净入金')).toBeInTheDocument();
     expect(screen.queryByText('策略收益率(TWR)')).not.toBeInTheDocument();
   });
 

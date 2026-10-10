@@ -197,6 +197,7 @@ export interface AccountSummary {
   openingConfigured?: boolean;
   netContributions?: number | null;
   cumulativePnl?: number | null;
+  holdingUnrealizedPnl?: number;
   xirr?: number | null;
   stockExposurePercent?: number;
   leverageMultiple?: number;

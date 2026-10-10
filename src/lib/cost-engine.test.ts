@@ -31,6 +31,7 @@ describe('professional cost basis', () => {
     expect(summary.totalAssets).toBe(26800);
     expect(summary.netContributions).toBe(25000);
     expect(summary.cumulativePnl).toBe(1800);
+    expect(summary.holdingUnrealizedPnl).toBeCloseTo(6709.09, 2);
     expect(summary.stockExposurePercent).toBeCloseTo(73.88, 2);
 
     const financed = calculateAccountSummary([tx({ type: 'buy', quantity: 100, amount_usd: 20000 })], [ticker], { t1: 220 }, { opening: { ...opening, opening_cash: 1000 }, positions: [] });

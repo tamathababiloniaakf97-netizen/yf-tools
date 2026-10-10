@@ -288,6 +288,7 @@ export function calculateAccountSummary(
   const netContributions = openingData ? openingNetAssets + totalDeposit - totalWithdraw : null;
   const totalInvested = netContributions ?? totalDeposit - totalWithdraw;
   const totalPnL = totalAssets - totalInvested;
+  const holdingUnrealizedPnl = positions.reduce((sum, position) => sum + position.pnl, 0);
   const pnlPercent = totalInvested > 0 ? (totalPnL / totalInvested) * 100 : null;
 
   for (const p of positions) {
@@ -314,6 +315,7 @@ export function calculateAccountSummary(
     openingConfigured: !!openingData,
     netContributions,
     cumulativePnl: openingData ? totalPnL : null,
+    holdingUnrealizedPnl,
     xirr,
     stockExposurePercent,
     leverageMultiple: totalAssets > 0 ? totalMarketValue / totalAssets : 0,
