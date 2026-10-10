@@ -1,7 +1,31 @@
-import type { PortfolioOpeningInput } from '@/types';
+import { getRate, toUSD } from '@/lib/exchange';
+import type { Currency, PortfolioOpeningInput } from '@/types';
 
 type ValidationResult = { ok: true; value: PortfolioOpeningInput } | { ok: false; error: string };
 const isoDate = /^\d{4}-\d{2}-\d{2}$/;
+
+export function calculateOpeningPositionAmounts(
+  quantity: number,
+  unitCost: number,
+  currency: Currency,
+  currentPrice: number | null,
+) {
+  if (!(quantity > 0) || !(unitCost > 0)) return null;
+  if (currentPrice == null || !(currentPrice > 0)) return null;
+  return {
+    total_cost_usd: toUSD(quantity * unitCost, currency),
+    opening_market_value_usd: toUSD(quantity * currentPrice, currency),
+  };
+}
+
+export function deriveOpeningUnitCost(
+  totalCostUsd: number,
+  quantity: number,
+  currency: Currency,
+) {
+  if (!(quantity > 0)) return 0;
+  return totalCostUsd / quantity / getRate(currency);
+}
 
 export function validatePortfolioOpening(input: PortfolioOpeningInput, earliestTransactionDate: string | null): ValidationResult {
   if (!isoDate.test(input.opening_date)) return { ok: false, error: '期初日期无效' };
