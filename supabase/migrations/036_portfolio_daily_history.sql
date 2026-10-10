@@ -9,7 +9,7 @@ alter table public.nav_history
   add column if not exists updated_at timestamptz not null default now();
 
 create table if not exists public.portfolio_position_snapshots (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   snapshot_date date not null,
   ticker_id uuid not null,
