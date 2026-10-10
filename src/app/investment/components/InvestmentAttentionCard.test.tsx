@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { InvestmentAttentionItem } from '@/lib/investment/attention';
-import InvestmentAttentionCard from './InvestmentAttentionCard';
+import InvestmentAttentionCard, { formatPlannedPriceGap } from './InvestmentAttentionCard';
 
 const items: InvestmentAttentionItem[] = [
   {
@@ -18,6 +18,14 @@ const items: InvestmentAttentionItem[] = [
 ];
 
 describe('InvestmentAttentionCard', () => {
+  afterEach(() => vi.unstubAllGlobals());
+  it('formats the planned buy price distance from the previous close', () => {
+    expect(formatPlannedPriceGap(400, 411.4)).toBe('-2.77%');
+    expect(formatPlannedPriceGap(420, 400)).toBe('+5.00%');
+    expect(formatPlannedPriceGap(400, 0)).toBeNull();
+    expect(formatPlannedPriceGap(null, 411.4)).toBeNull();
+  });
+
   it('shows why records resurfaced and exposes concise handling actions', () => {
     const onReview = vi.fn();
     const onSnooze = vi.fn();
@@ -34,5 +42,23 @@ describe('InvestmentAttentionCard', () => {
     expect(onSnooze).toHaveBeenCalledWith(items[0]);
     expect(onComplete).toHaveBeenCalledWith(items[1]);
     expect(screen.getByRole('link', { name: '转为待办' })).toHaveAttribute('href', expect.stringContaining('/investment/tasks?new=1'));
+  });
+
+  it('shows a priced task and fetches its previous close in place', async () => {
+    const priceItem: InvestmentAttentionItem = {
+      id: 'task:price', source: 'task', sourceId: 'price', title: '400买入', detail: '腾讯', reason: '价格关注', date: null, href: '/investment/tasks?task=price',
+      task: { id: 'price', user_id: 'u1', asset_name: '腾讯', task_type: 'price', title: '400买入', condition_note: '', ticker_id: 'ticker-1', price: 400, reminder_date: null, status: 'pending', notes: '', completed_at: null, source_type: 'manual', source_ref: null, review_status: 'approved', created_at: '', updated_at: '' },
+    };
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => ({ price: 428.6, currency: 'HKD', source: '腾讯行情' }) })));
+    render(<InvestmentAttentionCard items={[priceItem]} loading={false} onReview={vi.fn()} onSnooze={vi.fn()} onComplete={vi.fn()} />);
+    const priceLine = screen.getByTestId('price-attention-line');
+    expect(priceLine).toHaveTextContent('400买入');
+    expect(priceLine).toHaveTextContent('腾讯');
+    expect(screen.getByText('计划买入价：400')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '7天后提醒' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '获取前一日收盘价' }));
+    expect(await screen.findByText(/前一日收盘：428.6 HKD/)).toBeInTheDocument();
+    expect(priceLine).toHaveTextContent('前一日收盘：428.6 HKD');
+    expect(priceLine).toHaveTextContent('计划价距前收：-6.67%');
   });
 });

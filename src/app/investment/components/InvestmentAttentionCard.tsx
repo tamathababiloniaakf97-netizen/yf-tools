@@ -2,6 +2,7 @@
 
 import { Button, Card, Empty, List, Space, Tag, Typography } from 'antd';
 import Link from 'next/link';
+import { useState } from 'react';
 import type { InvestmentAttentionItem } from '@/lib/investment/attention';
 
 type Props = {
@@ -11,6 +12,13 @@ type Props = {
   onSnooze: (item: InvestmentAttentionItem) => void;
   onComplete: (item: InvestmentAttentionItem) => void;
 };
+
+export function formatPlannedPriceGap(plannedPrice: number | null | undefined, previousClose: number | null | undefined) {
+  if (typeof plannedPrice !== 'number' || !Number.isFinite(plannedPrice)) return null;
+  if (typeof previousClose !== 'number' || !Number.isFinite(previousClose) || previousClose <= 0) return null;
+  const percentage = ((plannedPrice - previousClose) / previousClose) * 100;
+  return `${percentage > 0 ? '+' : ''}${percentage.toFixed(2)}%`;
+}
 
 function taskHref(item: InvestmentAttentionItem) {
   const watch = item.watchItem;
@@ -24,6 +32,20 @@ function taskHref(item: InvestmentAttentionItem) {
 }
 
 export default function InvestmentAttentionCard({ items, loading, onReview, onSnooze, onComplete }: Props) {
+  const [quotes, setQuotes] = useState<Record<string, { loading?: boolean; price?: number; text?: string; error?: string }>>({});
+  const loadPreviousClose = async (item: InvestmentAttentionItem) => {
+    const tickerId = item.task?.ticker_id;
+    if (!tickerId) return;
+    setQuotes((current) => ({ ...current, [item.id]: { loading: true } }));
+    try {
+      const response = await fetch(`/api/prices/previous-close?ticker_id=${encodeURIComponent(tickerId)}`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || '获取失败');
+      setQuotes((current) => ({ ...current, [item.id]: { price: Number(data.price), text: `前一日收盘：${data.price} ${data.currency ?? ''}`.trim() } }));
+    } catch (error) {
+      setQuotes((current) => ({ ...current, [item.id]: { error: error instanceof Error ? error.message : '获取失败' } }));
+    }
+  };
   return (
     <Card
       title="今日需要关注"
@@ -42,7 +64,7 @@ export default function InvestmentAttentionCard({ items, loading, onReview, onSn
                 ...(item.source === 'watch'
                   ? [<Button key="review" size="small" type="link" onClick={() => onReview(item)}>已复核</Button>]
                   : [<Button key="complete" size="small" type="link" onClick={() => onComplete(item)}>完成</Button>]),
-                <Button key="snooze" size="small" type="link" onClick={() => onSnooze(item)}>7天后提醒</Button>,
+                ...(item.reason === '价格关注' ? [<Button key="quote" size="small" type="link" loading={quotes[item.id]?.loading} onClick={() => void loadPreviousClose(item)}>获取前一日收盘价</Button>] : [<Button key="snooze" size="small" type="link" onClick={() => onSnooze(item)}>7天后提醒</Button>]),
                 ...(item.source === 'watch'
                   ? [<Link key="task" href={taskHref(item)}>转为待办</Link>]
                   : []),
@@ -50,8 +72,8 @@ export default function InvestmentAttentionCard({ items, loading, onReview, onSn
               ]}
             >
               <List.Item.Meta
-                title={<Space wrap><Typography.Text strong>{item.title}</Typography.Text><Tag color={item.reason === '已逾期' ? 'red' : item.reason === '今天提醒' ? 'orange' : 'blue'}>{item.reason}</Tag></Space>}
-                description={item.detail || (item.source === 'watch' ? '观察事项' : '投资待办')}
+                title={item.reason === '价格关注' ? <Space data-testid="price-attention-line" wrap size={12}><Typography.Text strong>{item.title}</Typography.Text><Tag color="blue">价格关注</Tag><Typography.Text>{item.detail || '投资待办'}</Typography.Text>{item.task?.price != null && <Typography.Text type="secondary">计划买入价：{item.task.price}</Typography.Text>}{quotes[item.id]?.text && <Typography.Text type="secondary">{quotes[item.id].text}</Typography.Text>}{formatPlannedPriceGap(item.task?.price, quotes[item.id]?.price) && <Typography.Text type="secondary">计划价距前收：{formatPlannedPriceGap(item.task?.price, quotes[item.id]?.price)}</Typography.Text>}{quotes[item.id]?.error && <Typography.Text type="danger">{quotes[item.id].error}</Typography.Text>}</Space> : <Space wrap><Typography.Text strong>{item.title}</Typography.Text><Tag color={item.reason === '已逾期' ? 'red' : item.reason === '今天提醒' ? 'orange' : 'default'}>{item.reason}</Tag></Space>}
+                description={item.reason === '价格关注' ? undefined : <Space orientation="vertical" size={2}><span>{item.detail || (item.source === 'watch' ? '观察事项' : '投资待办')}</span></Space>}
               />
             </List.Item>
           )}
