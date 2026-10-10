@@ -85,4 +85,32 @@ describe('PositionTable pending-order shortcut', () => {
     expect(summary.getAllByText('$0.00')).toHaveLength(2);
     expect(summary.getByText('—')).toBeInTheDocument();
   });
+
+  it('summarizes arbitrary selected positions and restores the filtered summary when cleared', () => {
+    renderPositionTable([position, defensivePosition, cryptoPosition]);
+    const summary = within(screen.getByLabelText('筛选结果汇总'));
+
+    fireEvent.click(screen.getByRole('checkbox', { name: '选择 英伟达' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: '选择 比特币' }));
+    expect(summary.getByText('已选汇总')).toBeInTheDocument();
+    expect(summary.getByText('2 / 3')).toBeInTheDocument();
+    expect(summary.getByText('$3,150.00')).toBeInTheDocument();
+    expect(summary.getByText('+$250.00')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('checkbox', { name: '选择 英伟达' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: '选择 比特币' }));
+    expect(summary.getByText('筛选汇总')).toBeInTheDocument();
+    expect(summary.getByText('3 / 3')).toBeInTheDocument();
+    expect(summary.getByText('$4,950.00')).toBeInTheDocument();
+  });
+
+  it('clears selected rows when a filter changes', () => {
+    renderPositionTable([position, defensivePosition, cryptoPosition]);
+    fireEvent.click(screen.getByRole('checkbox', { name: '选择 英伟达' }));
+    expect(within(screen.getByLabelText('筛选结果汇总')).getByText('已选汇总')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByRole('searchbox', { name: '搜索标的' }), { target: { value: 'unh' } });
+    expect(within(screen.getByLabelText('筛选结果汇总')).getByText('筛选汇总')).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: '选择 联合健康' })).not.toBeChecked();
+  });
 });

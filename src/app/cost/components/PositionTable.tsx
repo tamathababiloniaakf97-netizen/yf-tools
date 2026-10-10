@@ -72,15 +72,44 @@ export default function PositionTable({
   const [styleFilter, setStyleFilter] = useState<TickerStyle | null>(null);
   const [typeFilter, setTypeFilter] = useState<TickerType | null>(null);
   const [query, setQuery] = useState('');
+  const [selectedTickerIds, setSelectedTickerIds] = useState<string[]>([]);
 
   const visiblePositions = useMemo(
     () => filterPositions(positions, { style: styleFilter, type: typeFilter, query }),
     [positions, styleFilter, typeFilter, query],
   );
+  const validSelectedTickerIds = useMemo(() => {
+    const availableIds = new Set(positions.map((position) => position.ticker.id));
+    return selectedTickerIds.filter((tickerId) => availableIds.has(tickerId));
+  }, [positions, selectedTickerIds]);
+  const selectedPositions = useMemo(() => {
+    const selectedIds = new Set(validSelectedTickerIds);
+    return visiblePositions.filter((position) => selectedIds.has(position.ticker.id));
+  }, [visiblePositions, validSelectedTickerIds]);
+  const hasSelection = selectedPositions.length > 0;
   const filteredSummary = useMemo(
-    () => summarizePositions(visiblePositions, positions.length, totalAssets),
-    [visiblePositions, positions.length, totalAssets],
+    () => summarizePositions(
+      hasSelection ? selectedPositions : visiblePositions,
+      hasSelection ? visiblePositions.length : positions.length,
+      totalAssets,
+    ),
+    [hasSelection, selectedPositions, visiblePositions, positions.length, totalAssets],
   );
+
+  const updateStyleFilter = (value: TickerStyle | 'all') => {
+    setStyleFilter(value === 'all' ? null : value);
+    setSelectedTickerIds([]);
+  };
+
+  const updateTypeFilter = (value: TickerType | 'all') => {
+    setTypeFilter(value === 'all' ? null : value);
+    setSelectedTickerIds([]);
+  };
+
+  const updateQuery = (value: string) => {
+    setQuery(value);
+    setSelectedTickerIds([]);
+  };
 
   const startEdit = (record: Position) => {
     setEditingId(record.ticker.id);
@@ -301,14 +330,14 @@ export default function PositionTable({
           <Select<TickerStyle | 'all'>
             aria-label="属性筛选"
             value={styleFilter ?? 'all'}
-            onChange={(value) => setStyleFilter(value === 'all' ? null : value)}
+            onChange={updateStyleFilter}
             style={{ width: 120 }}
             options={[{ value: 'all', label: '全部属性' }, ...styleSelectOptions]}
           />
           <Select<TickerType | 'all'>
             aria-label="类型筛选"
             value={typeFilter ?? 'all'}
-            onChange={(value) => setTypeFilter(value === 'all' ? null : value)}
+            onChange={updateTypeFilter}
             style={{ width: 120 }}
             options={[{ value: 'all', label: '全部类型' }, ...typeSelectOptions]}
           />
@@ -318,7 +347,7 @@ export default function PositionTable({
             allowClear
             placeholder="搜索名称或代码"
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => updateQuery(event.target.value)}
             style={{ width: 220 }}
           />
         </Space>
@@ -337,6 +366,7 @@ export default function PositionTable({
         size="large"
         style={{ width: '100%', marginBottom: 12, padding: '8px 12px', background: '#fafafa', borderRadius: 6 }}
       >
+        <Typography.Text strong>{hasSelection ? '已选汇总' : '筛选汇总'}</Typography.Text>
         <Typography.Text type="secondary">已显示 <Typography.Text strong>{filteredSummary.visibleCount} / {filteredSummary.totalCount}</Typography.Text></Typography.Text>
         <Typography.Text type="secondary">市值 <Typography.Text strong>{formatUsd(filteredSummary.marketValue)}</Typography.Text></Typography.Text>
         <Typography.Text type="secondary">浮盈亏 <Typography.Text strong type={filteredSummary.pnl > 0 ? 'danger' : filteredSummary.pnl < 0 ? 'success' : undefined}>{formatSignedUsd(filteredSummary.pnl)}</Typography.Text></Typography.Text>
@@ -351,6 +381,18 @@ export default function PositionTable({
         pagination={false}
         size="small"
         scroll={{ x: 1150 }}
+        rowSelection={{
+          selectedRowKeys: validSelectedTickerIds,
+          onChange: (selectedRowKeys) => setSelectedTickerIds(selectedRowKeys.map(String)),
+          getCheckboxProps: (record) => ({
+            title: `选择 ${record.ticker.name}`,
+            'aria-label': `选择 ${record.ticker.name}`,
+          }),
+          getTitleCheckboxProps: () => ({
+            title: '选择当前可见持仓',
+            'aria-label': '选择当前可见持仓',
+          }),
+        }}
       />
     </div>
   );
