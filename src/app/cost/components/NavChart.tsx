@@ -26,6 +26,7 @@ interface ChartMetrics {
   spyReturn: number | null;
   spyAnnual: number | null;
   spyMaxDd: number;
+  excessReturn: number | null;
 }
 
 interface Props {
@@ -34,9 +35,10 @@ interface Props {
   loading: boolean;
   warning?: string;
   metrics?: ChartMetrics | null;
+  periodLabel?: string;
 }
 
-export default function NavChart({ userNav, spyNav, loading, warning, metrics }: Props) {
+export default function NavChart({ userNav, spyNav, loading, warning, metrics, periodLabel }: Props) {
   const option = useMemo(() => {
     if (userNav.length === 0) return null;
 
@@ -104,7 +106,7 @@ export default function NavChart({ userNav, spyNav, loading, warning, metrics }:
   }, [userNav, spyNav]);
 
   return (
-    <Card title="净值走势图" size="small">
+    <Card title={`净值走势图${periodLabel ? ` · ${periodLabel}` : ''}`} size="small">
       {loading ? (
         <div style={{ textAlign: 'center', padding: 60 }}>
           <Spin />
@@ -128,6 +130,11 @@ export default function NavChart({ userNav, spyNav, loading, warning, metrics }:
                 {metrics.spyReturn !== null && (
                   <div style={{ fontSize: 12, color: '#999', marginTop: 4 }}>
                     标普500: {metrics.spyReturn >= 0 ? '+' : ''}{metrics.spyReturn.toFixed(2)}%
+                  </div>
+                )}
+                {metrics.excessReturn !== null && (
+                  <div style={{ fontSize: 12, color: '#999', marginTop: 4 }}>
+                    超额收益: {metrics.excessReturn >= 0 ? '+' : ''}{metrics.excessReturn.toFixed(2)}%
                   </div>
                 )}
               </Col>

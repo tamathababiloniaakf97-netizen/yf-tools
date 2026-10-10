@@ -1,16 +1,17 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Card, Spin } from 'antd';
+import { Alert, Card, Segmented, Space, Spin, Typography } from 'antd';
 import type { NavHistory } from '@/types';
 import { calculateAnnualizedReturn, calculateMaxDrawdown, calculateTWR } from '@/lib/portfolio';
 import NavChart from './NavChart';
+import { buildPeriodView, periodOptions, type PeriodKey } from './portfolio-period';
 
 const explanation = (
   <Alert
     type="info"
     showIcon
-    message="收益指标口径"
+    title="收益指标口径"
     description={<span>TWR排除入金、出金影响，用于评价投资表现；XIRR考虑每笔资金投入时间，用于评价个人资金回报。</span>}
     style={{ marginBottom: 12 }}
   />
@@ -20,6 +21,7 @@ export default function PortfolioHistoryPanel() {
   const [history, setHistory] = useState<NavHistory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [period, setPeriod] = useState<PeriodKey>('all');
 
   useEffect(() => {
     let active = true;
@@ -36,34 +38,42 @@ export default function PortfolioHistoryPanel() {
   }, []);
 
   const view = useMemo(() => {
-    const userNav = history.map((item) => ({ date: item.date, nav: Number(item.nav) }));
-    const benchmarkRows = history.filter((item) => item.benchmark_nav != null && Number(item.benchmark_nav) > 0);
-    const benchmarkBase = benchmarkRows.length > 0 ? Number(benchmarkRows[0].benchmark_nav) : null;
-    const spyNav = benchmarkBase
-      ? benchmarkRows.map((item) => ({ date: item.date, nav: Number(item.benchmark_nav) / benchmarkBase }))
-      : [];
-    const partial = history.some((item) => item.valuation_status === 'partial');
+    const periodView = buildPeriodView(history, period);
+    const { userNav, spyNav } = periodView;
+    const partial = periodView.rows.some((item) => item.valuation_status === 'partial');
+    const twrReturn = calculateTWR(userNav) ?? 0;
+    const spyReturn = calculateTWR(spyNav);
     return {
-      userNav,
-      spyNav,
+      ...periodView,
       warning: partial ? '部分日期使用最后有效价格，净值可能在行情补齐后调整。' : undefined,
       metrics: {
-        twrReturn: calculateTWR(userNav) ?? 0,
+        twrReturn,
         annualizedReturn: calculateAnnualizedReturn(userNav),
         maxDrawdown: calculateMaxDrawdown(userNav),
-        spyReturn: calculateTWR(spyNav),
+        spyReturn,
         spyAnnual: calculateAnnualizedReturn(spyNav),
         spyMaxDd: calculateMaxDrawdown(spyNav),
+        excessReturn: spyReturn === null ? null : twrReturn - spyReturn,
       },
     };
-  }, [history]);
+  }, [history, period]);
+
+  const periodLabel = periodOptions.find((item) => item.value === period)?.label ?? '期初以来';
+  const selector = <Space wrap style={{ marginBottom: 12 }}>
+    <Typography.Text type="secondary">查看区间</Typography.Text>
+    <Segmented options={periodOptions} value={period} onChange={(value) => setPeriod(value as PeriodKey)} />
+  </Space>;
 
   if (loading) return <Card title="历史绩效" size="small" style={{ marginBottom: 16 }}><div style={{ textAlign: 'center', padding: 36 }}><Spin /></div></Card>;
-  if (error) return <Card title="历史绩效" size="small" style={{ marginBottom: 16 }}><Alert type="error" showIcon message={error} /></Card>;
-  if (history.length < 2) return <Card title="历史绩效" size="small" style={{ marginBottom: 16 }}>{explanation}<Alert type="info" showIcon message="历史数据正在积累" description="至少保存两个不同日期的每日快照后，才会显示净值曲线和绩效指标。" /></Card>;
+  if (error) return <Card title="历史绩效" size="small" style={{ marginBottom: 16 }}><Alert type="error" showIcon title={error} /></Card>;
+  if (history.length < 2) return <Card title="历史绩效" size="small" style={{ marginBottom: 16 }}>{explanation}<Alert type="info" showIcon title="历史数据正在积累" description="至少保存两个不同日期的每日快照后，才会显示净值曲线和绩效指标。" /></Card>;
 
   return <div style={{ marginBottom: 16 }}>
     {explanation}
-    <NavChart userNav={view.userNav} spyNav={view.spyNav} loading={false} metrics={view.metrics} warning={view.warning} />
+    {selector}
+    {view.shortened && <Alert type="info" showIcon title="历史数据仍在自然积累" description={`${periodLabel}目标起点为 ${view.requestedStart}，目前实际从 ${view.actualStart} 起算。`} style={{ marginBottom: 12 }} />}
+    {!view.hasEnoughData
+      ? <Card title={`净值走势图 · ${periodLabel}`} size="small"><Alert type="info" showIcon title="所选区间数据正在积累" description={`当前只有 ${view.userNav.length} 个每日快照，至少需要 2 个不同日期才能计算区间收益。`} /></Card>
+      : <NavChart userNav={view.userNav} spyNav={view.spyNav} loading={false} metrics={view.metrics} warning={view.warning} periodLabel={periodLabel} />}
   </div>;
 }
