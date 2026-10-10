@@ -261,6 +261,7 @@ export default function CostPage() {
         </Space>
         <PositionTable
           positions={summary?.positions || []}
+          totalAssets={summary?.totalAssets ?? 0}
           loading={loading}
           onViewTransactions={(tickerId) => {
             setViewTickerId(tickerId);

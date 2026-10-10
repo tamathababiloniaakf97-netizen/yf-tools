@@ -7,7 +7,14 @@ vi.mock('@/components/AuthGuard', () => ({ default: ({ children }: { children: R
 vi.mock('./components/AccountSummaryCards', () => ({ default: ({ onOpenAccountDistribution }: { onOpenAccountDistribution?: () => void }) => <button onClick={onOpenAccountDistribution}>查看账户分布</button> }));
 vi.mock('./components/AccountDistributionDrawer', () => ({ default: ({ open }: { open: boolean }) => open ? <div>账户分布抽屉已打开</div> : null }));
 vi.mock('./components/PortfolioHistoryPanel', () => ({ default: () => <div>历史绩效</div> }));
-vi.mock('./components/PositionTable', () => ({ default: ({ onSyncPrices }: { onSyncPrices: () => void }) => <button onClick={onSyncPrices}>测试更新价格</button> }));
+vi.mock('./components/PositionTable', () => ({
+  default: ({ onSyncPrices, totalAssets }: { onSyncPrices: () => void; totalAssets: number }) => (
+    <div>
+      <span>持仓汇总分母：{totalAssets}</span>
+      <button onClick={onSyncPrices}>测试更新价格</button>
+    </div>
+  ),
+}));
 vi.mock('./components/TransactionModal', () => ({ default: () => null }));
 vi.mock('./components/TickerModal', () => ({ default: () => null }));
 vi.mock('./components/TickerManagerModal', () => ({ default: () => null }));
@@ -31,11 +38,17 @@ describe('CostPage transaction loading', () => {
   it('opens account distribution without navigating away from the cost page', async () => {
     vi.stubGlobal('fetch', vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
-      if (url === '/api/positions') return Promise.resolve({ ok: true, json: async () => ({ tickers: [], transactions: [], opening: null, openingPositions: [] }) } as Response);
+      if (url === '/api/positions') return Promise.resolve({ ok: true, json: async () => ({
+        tickers: [],
+        transactions: [],
+        opening: { user_id: 'u1', opening_date: '2026-01-01', opening_cash: 10000, created_at: '', updated_at: '' },
+        openingPositions: [],
+      }) } as Response);
       if (url === '/api/transactions' || url === '/api/pending-orders') return Promise.resolve({ ok: true, json: async () => [] } as Response);
       throw new Error(`Unexpected request: ${url}`);
     }));
     render(<App><CostPage /></App>);
+    expect(await screen.findByText('持仓汇总分母：10000')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '查看账户分布' }));
     expect(await screen.findByText('账户分布抽屉已打开')).toBeInTheDocument();
   });
