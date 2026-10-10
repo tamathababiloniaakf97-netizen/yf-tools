@@ -10,6 +10,6 @@ describe('portfolio snapshot cron migration', () => {
     expect(sql).toContain('portfolio-daily-snapshot');
     expect(sql).toContain('vault.decrypted_secrets');
     expect(sql).toContain("name = 'portfolio_snapshot_cron_secret'");
-    expect(sql).not.toContain('2f20fd277a8f4adca79298ae0a56e742');
+    expect(sql).not.toMatch(/[a-f0-9]{64}/i);
   });
 });
