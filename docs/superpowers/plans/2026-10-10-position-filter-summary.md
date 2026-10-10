@@ -434,3 +434,135 @@ Expected: the full Vitest suite passes with no failures.
 git add src/app/cost/page.tsx src/app/cost/page.test.tsx
 git commit -m "feat: connect account share to position filters"
 ```
+
+### Task 4: Add arbitrary row selection and selected-position summary
+
+**Files:**
+- Modify: `src/app/cost/components/PositionTable.tsx`
+- Modify: `src/app/cost/components/PositionTable.test.tsx`
+
+- [ ] **Step 1: Add failing component tests for selection semantics**
+
+Extend `src/app/cost/components/PositionTable.test.tsx` with tests that use the table row checkboxes by accessible name:
+
+```tsx
+it('summarizes arbitrary selected positions and restores the filtered summary when cleared', () => {
+  renderPositionTable([position, defensivePosition, cryptoPosition]);
+  const summary = within(screen.getByLabelText('筛选结果汇总'));
+
+  fireEvent.click(screen.getByRole('checkbox', { name: '选择 英伟达' }));
+  fireEvent.click(screen.getByRole('checkbox', { name: '选择 比特币' }));
+  expect(summary.getByText('已选汇总')).toBeInTheDocument();
+  expect(summary.getByText('2 / 3')).toBeInTheDocument();
+  expect(summary.getByText('$3,150.00')).toBeInTheDocument();
+  expect(summary.getByText('+$250.00')).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole('checkbox', { name: '选择 英伟达' }));
+  fireEvent.click(screen.getByRole('checkbox', { name: '选择 比特币' }));
+  expect(summary.getByText('筛选汇总')).toBeInTheDocument();
+  expect(summary.getByText('3 / 3')).toBeInTheDocument();
+  expect(summary.getByText('$4,950.00')).toBeInTheDocument();
+});
+
+it('clears selected rows when a filter changes', () => {
+  renderPositionTable([position, defensivePosition, cryptoPosition]);
+  fireEvent.click(screen.getByRole('checkbox', { name: '选择 英伟达' }));
+  expect(within(screen.getByLabelText('筛选结果汇总')).getByText('已选汇总')).toBeInTheDocument();
+
+  fireEvent.change(screen.getByRole('searchbox', { name: '搜索标的' }), { target: { value: 'unh' } });
+  expect(within(screen.getByLabelText('筛选结果汇总')).getByText('筛选汇总')).toBeInTheDocument();
+  expect(screen.getByRole('checkbox', { name: '选择 联合健康' })).not.toBeChecked();
+});
+```
+
+- [ ] **Step 2: Run the component test and verify it fails**
+
+Run:
+
+```bash
+npx vitest run src/app/cost/components/PositionTable.test.tsx
+```
+
+Expected: FAIL because the table has no row-selection checkboxes or selected-summary label.
+
+- [ ] **Step 3: Add controlled table row selection**
+
+In `src/app/cost/components/PositionTable.tsx`, add selected ticker IDs and clear them whenever a filter input changes:
+
+```tsx
+const [selectedTickerIds, setSelectedTickerIds] = useState<React.Key[]>([]);
+
+const selectedPositions = useMemo(() => {
+  const selectedIds = new Set(selectedTickerIds);
+  return visiblePositions.filter(position => selectedIds.has(position.ticker.id));
+}, [selectedTickerIds, visiblePositions]);
+const positionsToSummarize = selectedPositions.length > 0 ? selectedPositions : visiblePositions;
+const filteredSummary = useMemo(
+  () => summarizePositions(
+    positionsToSummarize,
+    selectedPositions.length > 0 ? visiblePositions.length : positions.length,
+    totalAssets,
+  ),
+  [positionsToSummarize, selectedPositions.length, visiblePositions.length, positions.length, totalAssets],
+);
+
+const updateStyleFilter = (value: TickerStyle | 'all') => {
+  setStyleFilter(value === 'all' ? null : value);
+  setSelectedTickerIds([]);
+};
+const updateTypeFilter = (value: TickerType | 'all') => {
+  setTypeFilter(value === 'all' ? null : value);
+  setSelectedTickerIds([]);
+};
+const updateQuery = (value: string) => {
+  setQuery(value);
+  setSelectedTickerIds([]);
+};
+```
+
+Connect those handlers to the existing controls and add Ant Design controlled row selection to the table:
+
+```tsx
+rowSelection={{
+  selectedRowKeys: selectedTickerIds,
+  onChange: setSelectedTickerIds,
+  getCheckboxProps: record => ({ 'aria-label': `选择 ${record.ticker.name}` }),
+}}
+```
+
+Add an accessible label to the table header selection checkbox through `columnTitle`:
+
+```tsx
+columnTitle: <span aria-label="选择当前可见持仓">选择</span>,
+```
+
+Render `selectedPositions.length > 0 ? '已选汇总' : '筛选汇总'` before the existing count. With a selection, the count produced by `summarizePositions` is “已选数量 / 当前可见数量”; without a selection it remains “当前可见数量 / 全部持仓数量”.
+
+- [ ] **Step 4: Keep selections valid across data-only refreshes**
+
+Add an effect that removes ticker IDs no longer present without clearing IDs merely because prices changed:
+
+```tsx
+useEffect(() => {
+  const availableIds = new Set(positions.map(position => position.ticker.id));
+  setSelectedTickerIds(current => current.filter(id => availableIds.has(String(id))));
+}, [positions]);
+```
+
+- [ ] **Step 5: Run focused verification**
+
+Run:
+
+```bash
+npx vitest run src/app/cost/components/position-table-summary.test.ts src/app/cost/components/PositionTable.test.tsx src/app/cost/page.test.tsx
+npx eslint src/app/cost/components/position-table-summary.ts src/app/cost/components/position-table-summary.test.ts src/app/cost/components/PositionTable.tsx src/app/cost/components/PositionTable.test.tsx src/app/cost/page.tsx src/app/cost/page.test.tsx
+```
+
+Expected: 13 focused tests pass and ESLint exits with code 0.
+
+- [ ] **Step 6: Commit the row-selection increment**
+
+```bash
+git add src/app/cost/components/PositionTable.tsx src/app/cost/components/PositionTable.test.tsx
+git commit -m "feat: summarize selected holdings"
+```
