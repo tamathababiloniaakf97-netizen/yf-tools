@@ -32,11 +32,11 @@ interface Props {
   userNav: NavDataPoint[];
   spyNav: NavDataPoint[];
   loading: boolean;
-  spyError?: string;
+  warning?: string;
   metrics?: ChartMetrics | null;
 }
 
-export default function NavChart({ userNav, spyNav, loading, spyError, metrics }: Props) {
+export default function NavChart({ userNav, spyNav, loading, warning, metrics }: Props) {
   const option = useMemo(() => {
     if (userNav.length === 0) return null;
 
@@ -171,8 +171,8 @@ export default function NavChart({ userNav, spyNav, loading, spyError, metrics }
             />
           )}
 
-          {spyError && (
-            <Alert message={spyError} type="warning" showIcon style={{ marginTop: 8 }} />
+          {warning && (
+            <Alert message={warning} type="warning" showIcon style={{ marginTop: 8 }} />
           )}
         </>
       )}

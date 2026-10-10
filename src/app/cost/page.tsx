@@ -13,6 +13,7 @@ import TransactionPanel from './components/TransactionPanel';
 import PendingOrdersPanel from './components/PendingOrdersPanel';
 import PortfolioOpeningModal from './components/PortfolioOpeningModal';
 import AccountDistributionDrawer from './components/AccountDistributionDrawer';
+import PortfolioHistoryPanel from './components/PortfolioHistoryPanel';
 import { calculateAccountSummary } from '@/lib/cost-engine';
 import type { Ticker, Transaction, AccountSummary, PendingOrder, PortfolioOpening, PortfolioOpeningPosition, TickerStyle } from '@/types';
 
@@ -249,9 +250,7 @@ export default function CostPage() {
       {!opening && <Alert type="warning" showIcon style={{ marginBottom: 16 }} message="请先设置期初账户" description="完成期初现金与期初持仓后，系统才能正确计算净入金、累计盈亏和 XIRR。" />}
       <AccountSummaryCards summary={summary} loading={loading} onOpenAccountDistribution={() => setAccountDistributionOpen(true)} />
 
-      <Card title="历史绩效" size="small" style={{ marginBottom: 16 }}>
-        <Alert type="info" showIcon message="历史净值暂未启用" description="目前只有当前价格，用它回填历史会产生错误的 TWR、年化收益率和最大回撤。待补齐每日历史价格后，再恢复净值曲线与标普500对比。" />
-      </Card>
+      <PortfolioHistoryPanel />
 
       {/* 持仓列表 */}
       <Card title="持仓明细" size="small" style={{ marginBottom: 16 }}>

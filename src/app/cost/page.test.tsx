@@ -6,6 +6,7 @@ import CostPage from './page';
 vi.mock('@/components/AuthGuard', () => ({ default: ({ children }: { children: React.ReactNode }) => children }));
 vi.mock('./components/AccountSummaryCards', () => ({ default: ({ onOpenAccountDistribution }: { onOpenAccountDistribution?: () => void }) => <button onClick={onOpenAccountDistribution}>查看账户分布</button> }));
 vi.mock('./components/AccountDistributionDrawer', () => ({ default: ({ open }: { open: boolean }) => open ? <div>账户分布抽屉已打开</div> : null }));
+vi.mock('./components/PortfolioHistoryPanel', () => ({ default: () => <div>历史绩效</div> }));
 vi.mock('./components/PositionTable', () => ({ default: ({ onSyncPrices }: { onSyncPrices: () => void }) => <button onClick={onSyncPrices}>测试更新价格</button> }));
 vi.mock('./components/TransactionModal', () => ({ default: () => null }));
 vi.mock('./components/TickerModal', () => ({ default: () => null }));

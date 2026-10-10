@@ -162,9 +162,33 @@ export interface NavHistory {
   date: string;
   total_assets: number;
   cash_balance: number;
+  market_value: number;
+  external_flow: number;
   nav: number;
   shares: number;
+  valuation_status: 'complete' | 'partial' | 'failed';
+  price_errors: string[];
+  benchmark_price: number | null;
+  benchmark_nav: number | null;
   created_at: string;
+  updated_at: string;
+}
+
+export interface PortfolioPositionSnapshot {
+  id: string;
+  user_id: string;
+  snapshot_date: string;
+  ticker_id: string;
+  ticker_name: string;
+  ticker_code: string;
+  quantity: number;
+  price_usd: number;
+  market_value_usd: number;
+  price_source: string;
+  price_date: string | null;
+  used_fallback: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 // ============================================================
