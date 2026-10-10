@@ -27,6 +27,11 @@ export function deriveOpeningUnitCost(
   return totalCostUsd / quantity / getRate(currency);
 }
 
+export function deriveNativePrice(currentPriceUsd: number | null, currency: Currency) {
+  if (currentPriceUsd == null || !(currentPriceUsd > 0)) return null;
+  return currentPriceUsd / getRate(currency);
+}
+
 export function validatePortfolioOpening(input: PortfolioOpeningInput, earliestTransactionDate: string | null): ValidationResult {
   if (!isoDate.test(input.opening_date)) return { ok: false, error: '期初日期无效' };
   if (earliestTransactionDate && input.opening_date > earliestTransactionDate) {

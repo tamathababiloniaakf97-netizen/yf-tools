@@ -37,10 +37,14 @@ describe('PortfolioOpeningModal', () => {
       const input = screen.getByRole('spinbutton', { name: /每股成本价/ }) as HTMLInputElement;
       expect(Number(input.value)).toBeCloseTo(480);
     });
+    await waitFor(() => {
+      const input = screen.getByRole('spinbutton', { name: /期初价格/ }) as HTMLInputElement;
+      expect(Number(input.value)).toBeCloseTo(520);
+    });
     expect(screen.getByText(/不能晚于 2026-01-01/)).toBeInTheDocument();
   });
 
-  it('warns when the selected ticker has no current price', async () => {
+  it('allows a native-currency opening price when automatic quotes are unavailable', async () => {
     render(<App><PortfolioOpeningModal
       open
       tickers={[{ ...hkdTicker, current_price: null }]}
@@ -50,6 +54,8 @@ describe('PortfolioOpeningModal', () => {
       onClose={vi.fn()}
       onSuccess={vi.fn()}
     /></App>);
-    expect(await screen.findByText('请先更新当前价格')).toBeInTheDocument();
+    expect(await screen.findByText('期初价格（HKD）')).toBeInTheDocument();
+    expect(screen.getByRole('spinbutton', { name: /期初价格/ })).toHaveValue('39.0000');
+    expect(screen.queryByText('请先更新当前价格')).not.toBeInTheDocument();
   });
 });

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   calculateOpeningPositionAmounts,
+  deriveNativePrice,
   deriveOpeningUnitCost,
   validatePortfolioOpening,
 } from './portfolio-opening';
@@ -31,6 +32,11 @@ describe('portfolio opening amount conversion', () => {
 
   it('derives the original unit cost from a stored USD total', () => {
     expect(deriveOpeningUnitCost(200 * 480 / 7.8, 200, 'HKD')).toBeCloseTo(480);
+  });
+
+  it('derives a native opening price from an already-USD synced price', () => {
+    expect(deriveNativePrice(520 / 7.8, 'HKD')).toBeCloseTo(520);
+    expect(deriveNativePrice(null, 'CNY')).toBeNull();
   });
 });
 
