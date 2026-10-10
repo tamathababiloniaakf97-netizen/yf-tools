@@ -11,7 +11,7 @@ const hkdTicker: Ticker = {
   code: '00700',
   type: 'stock_hk',
   currency: 'HKD',
-  current_price: 520,
+  current_price: 520 / 7.8,
   price_updated_at: '2026-10-09',
   style: null,
   created_at: '2026-01-01',

@@ -8,13 +8,13 @@ export function calculateOpeningPositionAmounts(
   quantity: number,
   unitCost: number,
   currency: Currency,
-  currentPrice: number | null,
+  currentPriceUsd: number | null,
 ) {
   if (!(quantity > 0) || !(unitCost > 0)) return null;
-  if (currentPrice == null || !(currentPrice > 0)) return null;
+  if (currentPriceUsd == null || !(currentPriceUsd > 0)) return null;
   return {
     total_cost_usd: toUSD(quantity * unitCost, currency),
-    opening_market_value_usd: toUSD(quantity * currentPrice, currency),
+    opening_market_value_usd: quantity * currentPriceUsd,
   };
 }
 

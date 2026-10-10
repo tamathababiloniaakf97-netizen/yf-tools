@@ -6,14 +6,15 @@ import {
 } from './portfolio-opening';
 
 describe('portfolio opening amount conversion', () => {
-  it('converts a HKD unit cost and current price into USD totals', () => {
-    const amounts = calculateOpeningPositionAmounts(200, 480, 'HKD', 520);
+  it('converts a HKD unit cost while keeping the already-USD current price', () => {
+    const currentPriceUsd = 424.8 / 7.8;
+    const amounts = calculateOpeningPositionAmounts(200, 480, 'HKD', currentPriceUsd);
     expect(amounts?.total_cost_usd).toBeCloseTo(200 * 480 / 7.8);
-    expect(amounts?.opening_market_value_usd).toBeCloseTo(200 * 520 / 7.8);
+    expect(amounts?.opening_market_value_usd).toBeCloseTo(200 * currentPriceUsd);
   });
 
   it('converts CNY and USD amounts with the configured rates', () => {
-    expect(calculateOpeningPositionAmounts(100, 72, 'CNY', 79.2)).toEqual({
+    expect(calculateOpeningPositionAmounts(100, 72, 'CNY', 11)).toEqual({
       total_cost_usd: 1000,
       opening_market_value_usd: 1100,
     });
