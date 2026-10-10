@@ -131,6 +131,7 @@ export default function CostPage() {
   const handlePriceChange = async (tickerId: string, price: number) => {
     const newPrices = { ...currentPrices, [tickerId]: price };
     setCurrentPrices(newPrices);
+    setTickers(current => current.map(ticker => ticker.id === tickerId ? { ...ticker, current_price: price } : ticker));
     localStorage.setItem('currentPrices', JSON.stringify(newPrices));
 
     // 重新计算汇总
@@ -185,6 +186,9 @@ export default function CostPage() {
 
       setCurrentPrices(newPrices);
       setPriceUpdatedAt(newUpdatedAt);
+      setTickers(current => current.map(ticker => newPrices[ticker.id] !== undefined
+        ? { ...ticker, current_price: newPrices[ticker.id], price_updated_at: newUpdatedAt[ticker.id] }
+        : ticker));
       localStorage.setItem('currentPrices', JSON.stringify(newPrices));
 
       // 重新计算汇总
