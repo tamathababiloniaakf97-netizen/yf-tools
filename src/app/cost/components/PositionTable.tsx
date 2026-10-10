@@ -1,13 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Table, Tag, Button, InputNumber, Select, App, Tooltip, Space } from 'antd';
+import React, { useMemo, useState } from 'react';
+import { Table, Tag, Button, Input, InputNumber, Select, App, Tooltip, Space, Typography } from 'antd';
 import { EyeOutlined, CloudSyncOutlined, EditOutlined } from '@ant-design/icons';
-import type { Position, TickerStyle } from '@/types';
+import type { Position, TickerStyle, TickerType } from '@/types';
 import type { ColumnsType } from 'antd/es/table';
+import { filterPositions, summarizePositions } from './position-table-summary';
 
 interface Props {
   positions: Position[];
+  totalAssets: number;
   loading: boolean;
   onViewTransactions: (tickerId: string) => void;
   onViewPendingOrders: (tickerId: string) => void;
@@ -38,14 +40,47 @@ const typeLabels: Record<string, { label: string; color: string }> = {
   crypto: { label: '加密', color: 'orange' },
 };
 
+const typeSelectOptions: Array<{ value: TickerType; label: string }> = [
+  { value: 'stock_us', label: '美股' },
+  { value: 'stock_hk', label: '港股' },
+  { value: 'stock_a', label: 'A股' },
+  { value: 'crypto', label: '加密' },
+];
+
+function formatUsd(value: number): string {
+  return `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function formatSignedUsd(value: number): string {
+  if (value === 0) return '$0.00';
+  return `${value > 0 ? '+' : '-'}$${Math.abs(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function formatPercent(value: number | null, signed: boolean): string {
+  if (value === null) return '—';
+  return `${signed && value > 0 ? '+' : ''}${value.toFixed(2)}%`;
+}
+
 export default function PositionTable({
-  positions, loading, onViewTransactions, onViewPendingOrders,
+  positions, totalAssets, loading, onViewTransactions, onViewPendingOrders,
   onPriceChange, onSyncPrices, onRefresh, syncing, priceUpdatedAt,
 }: Props) {
   const { message } = App.useApp();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<number | null>(null);
   const [editingStyleId, setEditingStyleId] = useState<string | null>(null);
+  const [styleFilter, setStyleFilter] = useState<TickerStyle | null>(null);
+  const [typeFilter, setTypeFilter] = useState<TickerType | null>(null);
+  const [query, setQuery] = useState('');
+
+  const visiblePositions = useMemo(
+    () => filterPositions(positions, { style: styleFilter, type: typeFilter, query }),
+    [positions, styleFilter, typeFilter, query],
+  );
+  const filteredSummary = useMemo(
+    () => summarizePositions(visiblePositions, positions.length, totalAssets),
+    [visiblePositions, positions.length, totalAssets],
+  );
 
   const startEdit = (record: Position) => {
     setEditingId(record.ticker.id);
@@ -261,7 +296,32 @@ export default function PositionTable({
 
   return (
     <div>
-      <div style={{ marginBottom: 8, display: 'flex', justifyContent: 'flex-end' }}>
+      <div style={{ marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+        <Space wrap>
+          <Select<TickerStyle | 'all'>
+            aria-label="属性筛选"
+            value={styleFilter ?? 'all'}
+            onChange={(value) => setStyleFilter(value === 'all' ? null : value)}
+            style={{ width: 120 }}
+            options={[{ value: 'all', label: '全部属性' }, ...styleSelectOptions]}
+          />
+          <Select<TickerType | 'all'>
+            aria-label="类型筛选"
+            value={typeFilter ?? 'all'}
+            onChange={(value) => setTypeFilter(value === 'all' ? null : value)}
+            style={{ width: 120 }}
+            options={[{ value: 'all', label: '全部类型' }, ...typeSelectOptions]}
+          />
+          <Input.Search
+            aria-label="搜索标的"
+            type="search"
+            allowClear
+            placeholder="搜索名称或代码"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            style={{ width: 220 }}
+          />
+        </Space>
         <Button
           icon={<CloudSyncOutlined />}
           onClick={onSyncPrices}
@@ -271,8 +331,20 @@ export default function PositionTable({
           一键更新收盘价
         </Button>
       </div>
+      <Space
+        aria-label="筛选结果汇总"
+        wrap
+        size="large"
+        style={{ width: '100%', marginBottom: 12, padding: '8px 12px', background: '#fafafa', borderRadius: 6 }}
+      >
+        <Typography.Text type="secondary">已显示 <Typography.Text strong>{filteredSummary.visibleCount} / {filteredSummary.totalCount}</Typography.Text></Typography.Text>
+        <Typography.Text type="secondary">市值 <Typography.Text strong>{formatUsd(filteredSummary.marketValue)}</Typography.Text></Typography.Text>
+        <Typography.Text type="secondary">浮盈亏 <Typography.Text strong type={filteredSummary.pnl > 0 ? 'danger' : filteredSummary.pnl < 0 ? 'success' : undefined}>{formatSignedUsd(filteredSummary.pnl)}</Typography.Text></Typography.Text>
+        <Typography.Text type="secondary">收益率 <Typography.Text strong type={(filteredSummary.returnPercent ?? 0) > 0 ? 'danger' : (filteredSummary.returnPercent ?? 0) < 0 ? 'success' : undefined}>{formatPercent(filteredSummary.returnPercent, true)}</Typography.Text></Typography.Text>
+        <Typography.Text type="secondary">占账户 <Typography.Text strong>{formatPercent(filteredSummary.accountPercent, false)}</Typography.Text></Typography.Text>
+      </Space>
       <Table
-        dataSource={positions}
+        dataSource={visiblePositions}
         columns={columns}
         rowKey={(record) => record.ticker.id}
         loading={loading}
