@@ -7,12 +7,16 @@ import {
   investmentDecisionTypes,
   investmentTaskStatuses,
   investmentTaskTypes,
+  industryCompanyRoles,
+  industryCompanyStages,
+  externalVariableOwnerTypes,
   relationshipTypes,
   sourceTypes,
   type Contact,
   type ContactInteraction,
   type Goal,
   type InvestmentTask,
+  type IndustryProfile,
   type ResearchProfileInput,
 } from './life-os';
 
@@ -90,5 +94,19 @@ describe('Life OS domain values', () => {
       earnings_quality: '经营现金流长期覆盖利润',
     };
     expect(profile.asset_name).toBe('腾讯');
+  });
+
+  it('defines lightweight industry research contracts', () => {
+    expect(industryCompanyStages).toEqual(['upstream', 'industry', 'downstream']);
+    expect(industryCompanyRoles).toEqual(['leader', 'challenger', 'supplier', 'customer', 'substitute', 'other']);
+    expect(externalVariableOwnerTypes).toEqual(['industry', 'company']);
+    const industry: IndustryProfile = {
+      id: 'industry-1', user_id: 'u1', name: '云计算', summary_judgment: '需求仍增长但竞争加剧',
+      upstream_overview: '芯片与服务器', industry_overview: '云服务商', downstream_overview: '企业客户',
+      key_drivers: '企业数字化', risks_and_reversal_signals: '资本开支持续下降', notes: '',
+      source_type: 'manual', source_ref: null, review_status: 'approved',
+      created_at: '2026-10-08T00:00:00Z', updated_at: '2026-10-08T00:00:00Z',
+    };
+    expect(industry.name).toBe('云计算');
   });
 });

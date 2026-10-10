@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createServerSideClient } from '@/lib/supabase/server';
 import { buildHouseholdStatements, periodBounds } from '@/lib/household-finance/statements';
 import type { HouseholdLedgerEntry } from '@/types/household-finance';
+import { deriveLiabilityBalances } from '@/lib/household-finance/liability-balances';
 
 function latestValues<T extends { snapshot_date: string; value_cny: number; account_id?: string; asset_id?: string; liability_id?: string }>(rows: T[], end: string) {
   const latest = new Map<string, T>();
@@ -28,7 +29,8 @@ export async function GET(request: Request) {
   const [settings, entries, accounts, assets, liabilities, accountSnapshots, assetSnapshots, liabilitySnapshots, investments, closures, entryReviews] = results.map(result => result.data ?? []);
   const accountValues = latestValues(accountSnapshots as never[], bounds.end);
   const assetValues = latestValues(assetSnapshots as never[], bounds.end);
-  const liabilityValues = latestValues(liabilitySnapshots as never[], bounds.end);
+  const liabilityBalances = deriveLiabilityBalances(liabilitySnapshots as never[], entries as HouseholdLedgerEntry[], bounds.end);
+  const liabilityValues = [...liabilityBalances].map(([liability_id, balance]) => ({ liability_id, snapshot_date: balance.calculated_through_date, value_cny: balance.value_cny }));
   const investment = [...investments].filter(row => row.snapshot_date <= bounds.end).sort((a, b) => b.snapshot_date.localeCompare(a.snapshot_date))[0] ?? null;
   const statements = buildHouseholdStatements({ start: bounds.start, end: bounds.end, entries: entries as HouseholdLedgerEntry[], assets: [...accountValues, ...assetValues], liabilities: liabilityValues, investment: investment ? { securities_cny: Number(investment.securities_cny), cash_cny: Number(investment.cash_cny), unrealized_change_cny: 0 } : null });
   return NextResponse.json({ enabled: settings.length > 0, settings: settings[0] ?? null, bounds, entries, accounts, assets, liabilities, accountSnapshots, assetSnapshots, liabilitySnapshots, investment, closures, entryReviews, statements });

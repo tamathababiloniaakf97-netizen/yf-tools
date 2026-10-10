@@ -4,6 +4,7 @@ import React, { useEffect, useMemo } from 'react';
 import { Modal, Form, Input, Select, DatePicker, InputNumber, App } from 'antd';
 import dayjs from 'dayjs';
 import type { Ticker, TransactionType, OptionPosition, Transaction } from '@/types';
+import { flowClassName, formatFlowAmount, valueFlow } from '@/lib/household-finance/amount-presentation';
 
 interface Props {
   open: boolean;
@@ -375,8 +376,8 @@ export default function TransactionModal({ open, onClose, onSuccess, tickers, op
                 return (
                   <div style={{ color: '#666', marginBottom: 16 }}>
                     {dirLabel} × {v.option_quantity} @ ${v.option_price} =
-                    <span style={{ color: amount >= 0 ? '#f5222d' : '#52c41a', fontWeight: 600 }}>
-                      {amount >= 0 ? ' +' : ' '}${amount.toFixed(2)}
+                    <span className={flowClassName(valueFlow(amount))}>
+                      {' '}{formatFlowAmount(amount, valueFlow(amount), 'USD')}
                     </span>
                   </div>
                 );

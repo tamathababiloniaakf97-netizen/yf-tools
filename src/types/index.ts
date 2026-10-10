@@ -119,6 +119,7 @@ export interface PendingOrder {
   position_id: string | null;
   quantity: number;
   price: number;
+  reference_price?: number | null;
   strike_price: number | null;
   expiration_date: string | null;
   order_date: string;

@@ -26,4 +26,15 @@ describe('investment task reminders', () => {
       task({ review_status: 'pending', reminder_date: '2026-09-29' }),
     ], now)).toEqual([]);
   });
+  it('always includes active priced tasks regardless of their reminder date', () => {
+    const result = buildInvestmentTaskReminders([
+      task({ id: 'undated-price', ticker_id: 'ticker-1', price: 420 }),
+      task({ id: 'future-price', ticker_id: 'ticker-1', price: 430, reminder_date: '2026-10-10' }),
+      task({ id: 'future-unpriced', reminder_date: '2026-10-10' }),
+    ], now);
+    expect(result.map((item) => [item.subject_id, item.kind, item.reference_price, item.ticker_id])).toEqual([
+      ['undated-price', 'investment_task_price', 420, 'ticker-1'],
+      ['future-price', 'investment_task_price', 430, 'ticker-1'],
+    ]);
+  });
 });

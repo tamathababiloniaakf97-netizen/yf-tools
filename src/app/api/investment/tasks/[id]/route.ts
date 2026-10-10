@@ -15,6 +15,11 @@ export async function PATCH(request: Request, context: RouteContext) {
   const input = await request.json() as InvestmentTaskInput;
   const validation = validateInvestmentTaskInput({ ...input, completed_at: input.status === 'completed' ? (input.completed_at ?? (existing as InvestmentTask).completed_at) : null });
   if (!validation.ok) return NextResponse.json({ error: validation.errors.join('；') }, { status: 400 });
+  if (validation.value.ticker_id) {
+    const { data: ticker, error: tickerError } = await supabase.from('tickers').select('id').eq('id', validation.value.ticker_id).eq('user_id', user.id).maybeSingle();
+    if (tickerError) return NextResponse.json({ error: tickerError.message }, { status: 500 });
+    if (!ticker) return NextResponse.json({ error: '关联标的不存在' }, { status: 400 });
+  }
   const { data, error } = await supabase.from('investment_tasks').update({ ...validation.value, updated_at: new Date().toISOString() }).eq('id', id).eq('user_id', user.id).select().maybeSingle();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!data) return NextResponse.json({ error: '投资待办不存在' }, { status: 404 });

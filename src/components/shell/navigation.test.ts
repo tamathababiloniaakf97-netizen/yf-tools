@@ -55,10 +55,26 @@ describe('lifeOsNavigation', () => {
     });
   });
 
+  it('makes cycle observation directly available from investment navigation', () => {
+    const investment = lifeOsNavigation.find((item) => item.key === 'investment');
+    expect(investment?.children?.find((item) => item.key === 'market-cycles')).toMatchObject({
+      label: '周期观察', href: '/investment/cycles', disabled: false, phase: 'now',
+    });
+  });
+
+  it('adds cognition as a top-level module with overview, journals, and methods', () => {
+    const cognition = lifeOsNavigation.find((item) => item.key === 'cognition');
+    expect(cognition?.children?.map((item) => [item.label, item.href])).toEqual([
+      ['认知概览', '/cognition'],
+      ['认知日志', '/cognition/journals'],
+      ['认知方法论', '/cognition/methods'],
+    ]);
+  });
+
   it('orders investment navigation from overview and current holdings into attention, research, and review', () => {
     const investment = lifeOsNavigation.find((item) => item.key === 'investment');
     expect(investment?.children?.map((item) => item.key)).toEqual([
-      'investment-overview', 'holdings', 'watchlist', 'investment-tasks',
+      'investment-overview', 'market-cycles', 'holdings', 'watchlist', 'investment-tasks',
       'research', 'investment-decisions', 'investment-reviews', 'methodology', 'research-materials',
     ]);
   });

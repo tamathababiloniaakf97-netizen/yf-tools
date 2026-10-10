@@ -6,7 +6,7 @@ export type InvestmentAttentionItem = {
   sourceId: string;
   title: string;
   detail: string;
-  reason: '已逾期' | '今天提醒' | '7天未推进' | '14天未复核';
+  reason: '价格关注' | '已逾期' | '今天提醒' | '7天未推进' | '14天未复核';
   date: string | null;
   href: string;
   task?: InvestmentTask;
@@ -62,7 +62,15 @@ export function buildInvestmentAttentionItems({ tasks, watchItems, now = new Dat
 
   for (const item of tasks) {
     if (item.review_status !== 'approved' || !['pending', 'waiting'].includes(item.status)) continue;
-    if (item.reminder_date && item.reminder_date <= today) {
+    if (item.price != null) {
+      items.push({
+        id: `task:${item.id}`, source: 'task', sourceId: item.id,
+        title: item.title, detail: item.asset_name || item.condition_note,
+        reason: '价格关注', date: item.reminder_date,
+        href: `/investment/tasks?task=${item.id}`, task: item,
+        priority: -1, sortDate: item.updated_at,
+      });
+    } else if (item.reminder_date && item.reminder_date <= today) {
       items.push({
         id: `task:${item.id}`, source: 'task', sourceId: item.id,
         title: item.title, detail: item.asset_name || item.condition_note,

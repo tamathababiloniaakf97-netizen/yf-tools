@@ -4,7 +4,7 @@ import type { ResearchChecklistState, ResearchHypothesisInput, ResearchProfileIn
 const textFields = [
   'investment_thesis', 'current_judgment', 'risks', 'invalidation_conditions',
   'business_model', 'customer_value', 'competitive_advantage', 'long_term_assumptions',
-  'earnings_quality', 'management_culture', 'unknowns',
+  'earnings_quality', 'management_culture', 'unknowns', 'industry_impact',
 ] as const;
 
 function normalizeChecklist(input?: ResearchChecklistState): ResearchChecklistState {
@@ -29,6 +29,7 @@ export function normalizeResearchProfileInput(input: ResearchProfileInput) {
       ...normalized,
       asset_name: assetName,
       ticker_id: input.ticker_id ?? null,
+      industry_profile_id: input.industry_profile_id || null,
       checklist_state: normalizeChecklist(input.checklist_state),
       source_type: input.source_type ?? 'manual',
       source_ref: input.source_ref?.trim() || null,

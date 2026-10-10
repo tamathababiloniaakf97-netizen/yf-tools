@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect } from 'react';
-import { App, DatePicker, Form, InputNumber, Modal, Select } from 'antd';
+import { useEffect, useState } from 'react';
+import { App, Button, DatePicker, Form, InputNumber, Modal, Select, Space } from 'antd';
 import dayjs from 'dayjs';
 import type { OptionPosition, PendingOrder, PendingOrderCategory, Ticker } from '@/types';
 
@@ -19,6 +19,7 @@ export default function PendingOrderModal({ open, category, order, tickers, open
   const [form] = Form.useForm();
   const { message } = App.useApp();
   const optionAction = Form.useWatch('option_action', form);
+  const [referenceLoading, setReferenceLoading] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -55,6 +56,7 @@ export default function PendingOrderModal({ open, category, order, tickers, open
         position_id: category === 'option' ? values.position_id ?? order?.position_id ?? null : null,
         quantity: values.quantity,
         price: values.price,
+        reference_price: category === 'stock' ? values.reference_price ?? null : null,
         strike_price: category === 'option' ? values.strike_price : null,
         expiration_date: category === 'option' ? values.expiration_date?.format('YYYY-MM-DD') : null,
         order_date: values.order_date.format('YYYY-MM-DD'),
@@ -71,6 +73,22 @@ export default function PendingOrderModal({ open, category, order, tickers, open
       onSuccess();
     } catch (error) {
       if (error instanceof Error) message.error(error.message);
+    }
+  };
+
+  const loadPreviousClose = async () => {
+    const tickerId = form.getFieldValue('ticker_id');
+    if (!tickerId) return message.warning('请先选择标的');
+    setReferenceLoading(true);
+    try {
+      const response = await fetch(`/api/prices/previous-close?ticker_id=${encodeURIComponent(tickerId)}`);
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || '获取前一日收盘价失败');
+      form.setFieldValue('reference_price', result.price);
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : '获取前一日收盘价失败');
+    } finally {
+      setReferenceLoading(false);
     }
   };
 
@@ -104,6 +122,7 @@ export default function PendingOrderModal({ open, category, order, tickers, open
         <Form.Item name="price" label={category === 'stock' ? '挂单价（原始币种）' : '每张合约实际权利金（USD，已 ×100）'} rules={[{ required: true }]}>
           <InputNumber min={0.000001} precision={4} style={{ width: '100%' }} />
         </Form.Item>
+        {category === 'stock' && <Form.Item label="参考价格" extra="仅用于待成交挂单的价格比较，不进入交易流水。"><Space.Compact block><Form.Item name="reference_price" noStyle rules={[{ validator: (_, value) => value == null || value > 0 ? Promise.resolve() : Promise.reject(new Error('参考价格必须大于 0')) }]}><InputNumber aria-label="参考价格" min={0.000001} precision={4} style={{ width: '100%' }} /></Form.Item><Button loading={referenceLoading} onClick={() => void loadPreviousClose()}>获取前一日收盘价</Button></Space.Compact></Form.Item>}
         {category === 'option' && (
           <>
             <Form.Item name="strike_price" label="行权价（USD）" rules={[{ required: true }]}><InputNumber min={0.000001} precision={4} style={{ width: '100%' }} /></Form.Item>

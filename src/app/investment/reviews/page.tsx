@@ -1,64 +1,45 @@
 'use client';
 
-import { Alert, App, Button, Card, DatePicker, Empty, Form, Input, List, Modal, Select, Space, Tag, Typography } from 'antd';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
-import { useCallback, useEffect, useState } from 'react';
+import { Alert, App, Button, DatePicker, Empty, Form, Input, Modal, Popconfirm, Segmented, Select, Space, Tag, Typography } from 'antd';
+import { DeleteOutlined, EditOutlined, PlusOutlined, RightOutlined, SearchOutlined } from '@ant-design/icons';
+import dayjs from 'dayjs';
+import Link from 'next/link';
+import { useMemo, useState } from 'react';
+import useSWR from 'swr';
 import AuthGuard from '@/components/AuthGuard';
-import type { InvestmentDecision, InvestmentReview, InvestmentReviewInput, InvestmentReviewDecisionType } from '@/types/life-os';
+import ResizableSplitPane from '@/components/ResizableSplitPane';
+import { filterInvestmentJournals } from '@/lib/investment/journal';
+import type { InvestmentJournal, InvestmentJournalInput, InvestmentJournalReference, InvestmentJournalType } from '@/types/life-os';
 
-const decisionLabels = { buy: '买入', sell: '卖出', hold: '持有', skip: '放弃' } as const;
+const typeLabels: Record<InvestmentJournalType, string> = { decision_review:'决策复盘', missed_opportunity:'错失机会', investment_note:'投资心得' };
+const referenceLabels = { decision:'投资决策', research:'公司研究', hypothesis:'关键假设', material:'研究资料', journal:'投资日志' } as const;
+type JournalFilter = InvestmentJournalType | 'all';
 
 export default function InvestmentReviewsPage() {
-  const { message, modal } = App.useApp();
-  const [form] = Form.useForm();
-  const [items, setItems] = useState<InvestmentReview[]>([]);
-  const [decisions, setDecisions] = useState<InvestmentDecision[]>([]);
-  const [open, setOpen] = useState(false);
-  const [error, setError] = useState('');
-
-  const load = useCallback(async () => {
-    try {
-      const [response, decisionResponse] = await Promise.all([fetch('/api/investment/reviews'), fetch('/api/investment/decisions?status=finalized')]);
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || '复盘加载失败');
-      setItems(data); if (decisionResponse.ok) setDecisions(await decisionResponse.json()); setError('');
-    } catch (err) { setError(err instanceof Error ? err.message : '复盘加载失败'); }
-  }, []);
-  useEffect(() => {
-    const timeout = window.setTimeout(() => { void load(); }, 0);
-    return () => window.clearTimeout(timeout);
-  }, [load]);
-
-  const save = async () => {
-    const values = await form.validateFields();
-    const input: InvestmentReviewInput = { ...values, review_date: values.review_date.format('YYYY-MM-DD'), source_type: 'manual' };
-    const response = await fetch('/api/investment/reviews', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input) });
-    const data = await response.json();
-    if (!response.ok) return message.error(data.error || '保存失败');
-    message.success('复盘已保存'); setOpen(false); form.resetFields(); await load();
-  };
-
-  const remove = (item: InvestmentReview) => modal.confirm({
-    title: '删除这条复盘？', content: `${item.asset_name} · ${item.review_date}`, okText: '删除', okButtonProps: { danger: true }, cancelText: '取消',
-    onOk: async () => { const response = await fetch(`/api/investment/reviews/${item.id}`, { method: 'DELETE' }); if (!response.ok) throw new Error('删除失败'); await load(); },
-  });
-
-  const selectDecision = (decisionId: string | undefined) => {
-    const decision = decisions.find((item) => item.id === decisionId);
-    if (!decision) return;
-    const mapped: InvestmentReviewDecisionType = decision.decision_type === 'buy' || decision.decision_type === 'add' ? 'buy' : decision.decision_type === 'sell' || decision.decision_type === 'reduce' ? 'sell' : decision.decision_type === 'skip' ? 'skip' : 'hold';
-    form.setFieldsValue({ asset_name: decision.asset_name, decision_type: mapped, original_reason: decision.final_reason });
-  };
+  const { message } = App.useApp(); const [form] = Form.useForm();
+  const { data:items=[], error, mutate } = useSWR<InvestmentJournal[]>('/api/investment/reviews');
+  const { data:referenceOptions=[] } = useSWR<InvestmentJournalReference[]>('/api/investment/reference-options');
+  const [selectedId,setSelectedId]=useState<string>(); const [query,setQuery]=useState(''); const [type,setType]=useState<JournalFilter>('all');
+  const [open,setOpen]=useState(false); const [editing,setEditing]=useState<InvestmentJournal|null>(null); const [saving,setSaving]=useState(false);
+  const filtered=useMemo(()=>filterInvestmentJournals(items,query,type),[items,query,type]);
+  const requestedId=typeof window==='undefined'?undefined:new URLSearchParams(window.location.search).get('journal')||undefined;
+  const selected=filtered.find(item=>item.id===(selectedId??requestedId))??filtered[0]??null;
+  function startCreate(){setEditing(null);form.resetFields();form.setFieldsValue({journal_type:'investment_note',review_date:dayjs(),tags:[],reference_keys:[]});setOpen(true)}
+  function startEdit(item:InvestmentJournal){setEditing(item);form.setFieldsValue({...item,review_date:dayjs(item.review_date),reference_keys:item.references.map(referenceKey)});setOpen(true)}
+  async function save(){const values=await form.validateFields();const references=(values.reference_keys??[]).map((key:string)=>referenceOptions.find(option=>referenceKey(option)===key)).filter(Boolean) as InvestmentJournalReference[];const input:InvestmentJournalInput={title:values.title,journal_type:values.journal_type,review_date:values.review_date.format('YYYY-MM-DD'),content:values.content,asset_name:values.asset_name,tags:values.tags??[],references,decision_id:references.find(reference=>reference.type==='decision')?.id??null};setSaving(true);try{const response=await fetch(editing?`/api/investment/reviews/${editing.id}`:'/api/investment/reviews',{method:editing?'PATCH':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)});const data=await response.json();if(!response.ok)throw new Error(data.error||'保存失败');await mutate();setSelectedId(data.id);setOpen(false);form.resetFields();message.success(editing?'日志已更新':'日志已保存')}catch(saveError){message.error(saveError instanceof Error?saveError.message:'保存失败')}finally{setSaving(false)}}
+  async function remove(item:InvestmentJournal){const response=await fetch(`/api/investment/reviews/${item.id}`,{method:'DELETE'});if(!response.ok)return message.error('删除失败');if(selectedId===item.id)setSelectedId(undefined);await mutate();message.success('日志已删除')}
 
   return <AuthGuard>
-    <div className="page-heading"><div><Typography.Title level={2}>投资复盘</Typography.Title><Typography.Text type="secondary">记录当初为什么判断、后来发生了什么，以及下次如何改进。</Typography.Text></div><Button type="primary" icon={<PlusOutlined />} onClick={() => setOpen(true)}>新建复盘</Button></div>
-    {error && <Alert type="warning" showIcon message="投资复盘尚未连接" description={`${error}。请执行迁移 005_investment_reviews.sql。`} style={{ marginBottom: 16 }} />}
-    {items.length === 0 ? <Card><Empty description="还没有复盘。先从一次真实买卖或一次放弃开始。" /></Card> : <List grid={{ gutter: 16, column: 2, xs: 1 }} dataSource={items} renderItem={(item) => <List.Item><Card title={<Space><span>{item.asset_name}</span><Tag>{decisionLabels[item.decision_type]}</Tag></Space>} extra={<Button type="text" danger icon={<DeleteOutlined />} onClick={() => remove(item)} />}><Typography.Text type="secondary">{item.review_date}</Typography.Text><ReviewField title="当初依据" value={item.original_reason} /><ReviewField title="实际结果" value={item.actual_result} /><ReviewField title="做对了" value={item.correct_points} /><ReviewField title="需要改进" value={item.mistake_points} /><ReviewField title="复盘结论" value={item.lesson} strong /></Card></List.Item>} />}
-    <Modal title="新建投资复盘" open={open} okText="保存" cancelText="取消" onCancel={() => setOpen(false)} onOk={save} width={680}><Form form={form} layout="vertical"><Form.Item name="decision_id" label="关联原始决策（可选）" extra="选择后会带出公司、决策类型和当时理由，你仍可补充复盘内容。"><Select allowClear showSearch optionFilterProp="label" onChange={selectDecision} options={decisions.map((item) => ({ value: item.id, label: `${item.asset_name} · ${item.decision_date ?? '未注明日期'} · ${item.final_reason}` }))} /></Form.Item><div className="plan-form-grid"><Form.Item name="asset_name" label="标的" rules={[{ required: true }]}><Input /></Form.Item><Form.Item name="review_date" label="复盘日期" rules={[{ required: true }]}><DatePicker style={{ width: '100%' }} /></Form.Item><Form.Item name="decision_type" label="当时决策" rules={[{ required: true }]}><Select options={[{ value: 'buy', label: '买入' }, { value: 'sell', label: '卖出' }, { value: 'hold', label: '持有' }, { value: 'skip', label: '放弃' }]} /></Form.Item></div><Form.Item name="original_reason" label="当初的判断依据" rules={[{ required: true }]}><Input.TextArea rows={3} /></Form.Item><Form.Item name="actual_result" label="后来发生了什么"><Input.TextArea rows={2} /></Form.Item><Form.Item name="correct_points" label="哪些判断正确"><Input.TextArea rows={2} /></Form.Item><Form.Item name="mistake_points" label="哪些判断错误或遗漏"><Input.TextArea rows={2} /></Form.Item><Form.Item name="lesson" label="以后如何改进" rules={[{ required: true }]}><Input.TextArea rows={3} /></Form.Item></Form></Modal>
+    <div className="page-heading investment-journal-heading"><div><Typography.Title level={2}>投资日志</Typography.Title><Typography.Text type="secondary">复盘真实决策，也记录错失机会和逐渐形成的投资认识。</Typography.Text></div><Button type="primary" icon={<PlusOutlined/>} onClick={startCreate}>写一条</Button></div>
+    {error&&<Alert type="warning" showIcon message="投资日志尚未连接" description={`${error.message}。请执行迁移 027_investment_journal.sql。`} style={{marginBottom:16}}/>}
+    <ResizableSplitPane className="investment-journal-shell" storageKey="life-os:investment-journal:left-width" defaultLeftWidth={400}>
+      <aside className="investment-journal-list"><div className="investment-journal-tools"><Input allowClear prefix={<SearchOutlined/>} placeholder="搜索标题、正文、公司或标签" value={query} onChange={event=>setQuery(event.target.value)}/><Segmented block value={type} onChange={value=>setType(value as JournalFilter)} options={[{label:`全部 ${items.length}`,value:'all'},...Object.entries(typeLabels).map(([value,label])=>({value,label}))]}/></div>
+        <div className="investment-journal-feed">{filtered.length===0?<Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="没有符合条件的日志"/>:filtered.map(item=><button type="button" key={item.id} className={`investment-journal-row ${selected?.id===item.id?'is-selected':''}`} onClick={()=>setSelectedId(item.id)}><div className="investment-journal-row-meta"><Tag color={item.journal_type==='missed_opportunity'?'gold':item.journal_type==='investment_note'?'purple':'default'}>{typeLabels[item.journal_type]}</Tag><span>{item.review_date}</span></div><strong>{item.title}</strong><span className="investment-journal-excerpt">{item.content}</span><span className="investment-journal-row-footer">{[item.asset_name,...item.tags].filter(Boolean).join(' · ')||'未设置标的或标签'}{item.references.length?`　·　关联 ${item.references.length} 项`:''}</span></button>)}</div>
+      </aside>
+      <main className="investment-journal-reader">{!selected?<Empty description="选择一篇日志，或先写一条"/>:<article><header className="investment-journal-article-head"><Tag color={selected.journal_type==='missed_opportunity'?'gold':selected.journal_type==='investment_note'?'purple':'default'}>{typeLabels[selected.journal_type]}</Tag><Typography.Title level={2}>{selected.title}</Typography.Title><Space wrap split={<span>·</span>}><Typography.Text type="secondary">{selected.review_date}</Typography.Text>{selected.asset_name&&<Typography.Text type="secondary">{selected.asset_name}</Typography.Text>}{selected.tags.map(tag=><Tag key={tag}>{tag}</Tag>)}</Space><div className="investment-journal-actions"><Button icon={<EditOutlined/>} onClick={()=>startEdit(selected)}>编辑</Button><Popconfirm title="删除这篇日志？" onConfirm={()=>void remove(selected)}><Button danger icon={<DeleteOutlined/>}>删除</Button></Popconfirm></div></header><Typography.Paragraph className="investment-journal-body">{selected.content}</Typography.Paragraph>{selected.references.length>0&&<section className="investment-journal-references"><Typography.Text strong>关联内容</Typography.Text><Typography.Text type="secondary">　· 点击回到原记录</Typography.Text>{selected.references.map(reference=><Link className="investment-journal-reference" href={reference.href} key={`${reference.type}:${reference.id}`}><span><Tag color="cyan">{referenceLabels[reference.type]}</Tag>{reference.title}</span><RightOutlined/></Link>)}</section>}</article>}</main>
+    </ResizableSplitPane>
+    <Modal title={editing?'编辑投资日志':'写一条投资日志'} open={open} width={760} okText="保存" cancelText="取消" confirmLoading={saving} onCancel={()=>setOpen(false)} onOk={()=>void save()}><Form form={form} layout="vertical"><div className="plan-form-grid"><Form.Item name="journal_type" label="类型" rules={[{required:true}]}><Select options={Object.entries(typeLabels).map(([value,label])=>({value,label}))}/></Form.Item><Form.Item name="review_date" label="日期" rules={[{required:true}]}><DatePicker style={{width:'100%'}}/></Form.Item></div><Form.Item name="title" label="标题" rules={[{required:true,message:'请填写标题'}]}><Input placeholder="一句话写清这次思考的主题"/></Form.Item><div className="plan-form-grid"><Form.Item name="asset_name" label="公司或标的（可选）"><Input placeholder="如：腾讯控股"/></Form.Item><Form.Item name="tags" label="标签（可选）"><Select mode="tags" tokenSeparators={[',','，']} maxCount={8} placeholder="如：估值、仓位、执行"/></Form.Item></div><Form.Item name="content" label="正文" rules={[{required:true,message:'请填写正文'}]}><Input.TextArea autoSize={{minRows:10,maxRows:18}} placeholder="写下发生了什么、你怎么理解，以及以后准备怎么做。无需把每一项都填满。"/></Form.Item><Form.Item name="reference_keys" label="关联内容（可选）" extra="只保存跳转入口，不复制原文。最多选择 12 项。"><Select mode="multiple" maxCount={12} showSearch optionFilterProp="label" placeholder="关联投资决策、公司研究、关键假设、研究资料或其他日志" options={referenceOptions.filter(option=>option.id!==editing?.id).map(option=>({value:referenceKey(option),label:`${referenceLabels[option.type]}｜${option.title}`}))}/></Form.Item></Form></Modal>
   </AuthGuard>;
 }
 
-function ReviewField({ title, value, strong = false }: { title: string; value?: string; strong?: boolean }) {
-  if (!value) return null;
-  return <div style={{ marginTop: 12 }}><Typography.Text type="secondary">{title}</Typography.Text><Typography.Paragraph strong={strong} style={{ whiteSpace: 'pre-wrap', margin: '4px 0 0' }}>{value}</Typography.Paragraph></div>;
-}
+function referenceKey(reference:InvestmentJournalReference){return `${reference.type}:${reference.id}`}

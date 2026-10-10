@@ -13,6 +13,7 @@ export function validatePendingOrderInput(input: Partial<PendingOrderInput>): Va
   if (input.side !== 'buy' && input.side !== 'sell') return { ok: false, error: '买卖方向无效' };
   if (!Number.isFinite(input.quantity) || Number(input.quantity) <= 0) return { ok: false, error: '数量必须大于 0' };
   if (!Number.isFinite(input.price) || Number(input.price) <= 0) return { ok: false, error: '价格必须大于 0' };
+  if (input.category === 'stock' && input.reference_price != null && (!Number.isFinite(input.reference_price) || Number(input.reference_price) <= 0)) return { ok: false, error: '参考价格必须大于 0' };
   if (!input.order_date || !isoDate.test(input.order_date)) return { ok: false, error: '挂单日期无效' };
 
   if (input.category === 'option') {
@@ -34,11 +35,17 @@ export function validatePendingOrderInput(input: Partial<PendingOrderInput>): Va
       position_id: input.category === 'option' ? input.position_id ?? null : null,
       quantity: Number(input.quantity),
       price: Number(input.price),
+      reference_price: input.category === 'stock' && input.reference_price != null ? Number(input.reference_price) : null,
       strike_price: input.category === 'option' ? Number(input.strike_price) : null,
       expiration_date: input.category === 'option' ? input.expiration_date! : null,
       order_date: input.order_date,
     },
   };
+}
+
+export function calculatePendingOrderDeviation(price: number, referencePrice: number | null | undefined) {
+  if (!Number.isFinite(price) || !Number.isFinite(referencePrice) || Number(referencePrice) <= 0) return null;
+  return (price / Number(referencePrice) - 1) * 100;
 }
 
 export function buildTransactionFromPendingOrder(order: PendingOrder, ticker: Ticker, tradeDate: string) {

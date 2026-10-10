@@ -6,6 +6,7 @@ import { DeleteOutlined, DownloadOutlined, FilterOutlined, EditOutlined } from '
 import * as XLSX from 'xlsx';
 import type { Transaction, TransactionType, OptionAction, OptionDirection, OptionCallPut } from '@/types';
 import type { ColumnsType } from 'antd/es/table';
+import { flowClassName, formatFlowAmount, valueFlow } from '@/lib/household-finance/amount-presentation';
 
 const { RangePicker } = DatePicker;
 
@@ -170,10 +171,10 @@ export default function TransactionPanel({
         // 买入/出金是资金流出，显示为负；卖出/分红/入金是资金流入，显示为正
         const isOutflow = record.type === 'buy' || record.type === 'withdraw';
         const displayVal = isOutflow ? -Math.abs(val) : Math.abs(val);
-        const isNegative = displayVal < 0;
+        const flow = valueFlow(displayVal);
         return (
-          <span style={{ color: isNegative ? '#52c41a' : '#f5222d' }}>
-            {isNegative ? '-$' : '+$'}{Math.abs(displayVal).toFixed(2)}
+          <span className={flowClassName(flow)}>
+            {formatFlowAmount(displayVal, flow, 'USD')}
           </span>
         );
       },
@@ -286,10 +287,10 @@ export default function TransactionPanel({
       width: 110,
       render: (val: number | null) => {
         if (val === null || val === undefined) return '—';
-        const isNegative = val < 0;
+        const flow = valueFlow(val);
         return (
-          <span style={{ color: isNegative ? '#52c41a' : '#f5222d' }}>
-            {isNegative ? '-$' : '+$'}{Math.abs(val).toFixed(2)}
+          <span className={flowClassName(flow)}>
+            {formatFlowAmount(val, flow, 'USD')}
           </span>
         );
       },

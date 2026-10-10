@@ -19,7 +19,7 @@ const items: InvestmentAttentionItem[] = [
 
 describe('InvestmentAttentionCard', () => {
   afterEach(() => vi.unstubAllGlobals());
-  it('formats the planned buy price distance from the previous close', () => {
+  it('formats the planned buy price distance from the current price', () => {
     expect(formatPlannedPriceGap(400, 411.4)).toBe('-2.77%');
     expect(formatPlannedPriceGap(420, 400)).toBe('+5.00%');
     expect(formatPlannedPriceGap(400, 0)).toBeNull();
@@ -44,7 +44,7 @@ describe('InvestmentAttentionCard', () => {
     expect(screen.getByRole('link', { name: '转为待办' })).toHaveAttribute('href', expect.stringContaining('/investment/tasks?new=1'));
   });
 
-  it('shows a priced task and fetches its previous close in place', async () => {
+  it('shows a priced task and fetches its current price in place', async () => {
     const priceItem: InvestmentAttentionItem = {
       id: 'task:price', source: 'task', sourceId: 'price', title: '400买入', detail: '腾讯', reason: '价格关注', date: null, href: '/investment/tasks?task=price',
       task: { id: 'price', user_id: 'u1', asset_name: '腾讯', task_type: 'price', title: '400买入', condition_note: '', ticker_id: 'ticker-1', price: 400, reminder_date: null, status: 'pending', notes: '', completed_at: null, source_type: 'manual', source_ref: null, review_status: 'approved', created_at: '', updated_at: '' },
@@ -56,9 +56,37 @@ describe('InvestmentAttentionCard', () => {
     expect(priceLine).toHaveTextContent('腾讯');
     expect(screen.getByText('计划买入价：400')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '7天后提醒' })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: '获取前一日收盘价' }));
-    expect(await screen.findByText(/前一日收盘：428.6 HKD/)).toBeInTheDocument();
-    expect(priceLine).toHaveTextContent('前一日收盘：428.6 HKD');
-    expect(priceLine).toHaveTextContent('计划价距前收：-6.67%');
+    fireEvent.click(screen.getByRole('button', { name: '获取当前价' }));
+    expect(fetch).toHaveBeenCalledWith('/api/prices/current?ticker_id=ticker-1');
+    expect(await screen.findByText(/当前价：428.6 HKD/)).toBeInTheDocument();
+    expect(priceLine).toHaveTextContent('当前价：428.6 HKD');
+    expect(priceLine).toHaveTextContent('计划价距当前价：-6.67%');
+  });
+
+  it('updates every priced task with one click', async () => {
+    const pricedItems: InvestmentAttentionItem[] = [
+      {
+        id: 'task:price-1', source: 'task', sourceId: 'price-1', title: '腾讯买入', detail: '腾讯', reason: '价格关注', date: null, href: '/investment/tasks?task=price-1',
+        task: { id: 'price-1', user_id: 'u1', asset_name: '腾讯', task_type: 'price', title: '腾讯买入', condition_note: '', ticker_id: 'ticker-1', price: 400, reminder_date: null, status: 'pending', notes: '', completed_at: null, source_type: 'manual', source_ref: null, review_status: 'approved', created_at: '', updated_at: '' },
+      },
+      {
+        id: 'task:price-2', source: 'task', sourceId: 'price-2', title: 'BTC买入', detail: 'BTC', reason: '价格关注', date: null, href: '/investment/tasks?task=price-2',
+        task: { id: 'price-2', user_id: 'u1', asset_name: 'BTC', task_type: 'price', title: 'BTC买入', condition_note: '', ticker_id: 'ticker-2', price: 74000, reminder_date: null, status: 'pending', notes: '', completed_at: null, source_type: 'manual', source_ref: null, review_status: 'approved', created_at: '', updated_at: '' },
+      },
+    ];
+    const fetcher = vi.fn(async (url: string) => ({
+      ok: true,
+      json: async () => url.includes('ticker-1')
+        ? ({ price: 428.6, currency: 'HKD' })
+        : ({ price: 82584.01, currency: 'USD' }),
+    }));
+    vi.stubGlobal('fetch', fetcher);
+    render(<InvestmentAttentionCard items={pricedItems} loading={false} onReview={vi.fn()} onSnooze={vi.fn()} onComplete={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: '一键更新价格' }));
+
+    expect(await screen.findByText('当前价：428.6 HKD')).toBeInTheDocument();
+    expect(await screen.findByText('当前价：82584.01 USD')).toBeInTheDocument();
+    expect(fetcher).toHaveBeenCalledTimes(2);
   });
 });

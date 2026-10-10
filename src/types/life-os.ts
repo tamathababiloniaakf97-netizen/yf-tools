@@ -13,6 +13,9 @@ export const researchHypothesisStatuses = ['unverified', 'supported', 'challenge
 export const researchChecklistStatuses = ['considered', 'not_applicable', 'needs_validation'] as const;
 export const researchMaterialTypes = ['fact', 'news', 'viewpoint', 'report_excerpt'] as const;
 export const researchFields = ['business_model', 'customer_value', 'competitive_advantage', 'long_term_assumptions', 'invalidation_conditions', 'earnings_quality', 'management_culture', 'current_judgment', 'risks', 'unknowns', 'investment_thesis'] as const;
+export const industryCompanyStages = ['upstream', 'industry', 'downstream'] as const;
+export const industryCompanyRoles = ['leader', 'challenger', 'supplier', 'customer', 'substitute', 'other'] as const;
+export const externalVariableOwnerTypes = ['industry', 'company'] as const;
 
 export type SourceType = typeof sourceTypes[number];
 export type ReviewStatus = typeof reviewStatuses[number];
@@ -26,10 +29,43 @@ export type InvestmentTaskStatus = typeof investmentTaskStatuses[number];
 export type InvestmentDecisionStatus = typeof investmentDecisionStatuses[number];
 export type InvestmentDecisionType = typeof investmentDecisionTypes[number];
 export type InvestmentReviewDecisionType = 'buy' | 'sell' | 'hold' | 'skip';
+export type InvestmentJournalType = 'decision_review' | 'missed_opportunity' | 'investment_note';
+export type InvestmentReferenceType = 'decision' | 'research' | 'hypothesis' | 'material' | 'journal';
+export type CognitionMethodStatus = 'unverified' | 'verified' | 'retired';
+
+export interface CognitionCategory { id: string; user_id: string; name: string; is_active: boolean; sort_order: number; created_at: string; updated_at: string; }
+export interface CognitionJournalInput { title: string; occurred_on: string; category_id: string; content: string; context?: string; tags?: string[]; error_tags?: string[]; facts?: string; initial_judgment?: string; judgment_basis?: string; discovered_error?: string; counterevidence?: string; next_action?: string; method_id?: string | null; }
+export interface CognitionJournal extends CognitionJournalInput { id: string; user_id: string; context: string; tags: string[]; error_tags: string[]; facts: string; initial_judgment: string; judgment_basis: string; discovered_error: string; counterevidence: string; next_action: string; method_id: string | null; created_at: string; updated_at: string; }
+export interface CognitionMethodInput { title: string; category_id: string; content: string; applicable_context?: string; evidence_basis?: string; action_rule?: string; exceptions?: string; status?: CognitionMethodStatus; source_journal_id?: string | null; }
+export interface CognitionMethod extends CognitionMethodInput { id: string; user_id: string; applicable_context: string; evidence_basis: string; action_rule: string; exceptions: string; status: CognitionMethodStatus; source_journal_id: string | null; created_at: string; updated_at: string; }
+
+export interface InvestmentJournalReference {
+  type: InvestmentReferenceType;
+  id: string;
+  title: string;
+  href: string;
+}
+
+export interface InvestmentJournalInput {
+  title: string;
+  journal_type: InvestmentJournalType;
+  review_date: string;
+  content: string;
+  asset_name?: string;
+  tags?: string[];
+  references?: InvestmentJournalReference[];
+  decision_id?: string | null;
+  source_type?: SourceType;
+  source_ref?: string | null;
+  review_status?: ReviewStatus;
+}
 export type ResearchHypothesisStatus = typeof researchHypothesisStatuses[number];
 export type ResearchChecklistStatus = typeof researchChecklistStatuses[number];
 export type ResearchMaterialType = typeof researchMaterialTypes[number];
 export type ResearchField = typeof researchFields[number];
+export type IndustryCompanyStage = typeof industryCompanyStages[number];
+export type IndustryCompanyRole = typeof industryCompanyRoles[number];
+export type ExternalVariableOwnerType = typeof externalVariableOwnerTypes[number];
 
 export interface Goal {
   id: string;
@@ -148,6 +184,8 @@ export interface InvestmentTask {
   task_type: InvestmentTaskType;
   title: string;
   condition_note: string;
+  ticker_id?: string | null;
+  price?: number | null;
   reminder_date: string | null;
   status: InvestmentTaskStatus;
   notes: string;
@@ -160,7 +198,7 @@ export interface InvestmentTask {
 }
 
 export type InvestmentTaskInput = Pick<InvestmentTask, 'task_type' | 'title'> & Partial<Pick<InvestmentTask,
-  'asset_name' | 'condition_note' | 'reminder_date' | 'status' | 'notes' | 'completed_at' |
+  'asset_name' | 'condition_note' | 'ticker_id' | 'price' | 'reminder_date' | 'status' | 'notes' | 'completed_at' |
   'source_type' | 'source_ref' | 'review_status'
 >>;
 
@@ -246,6 +284,8 @@ export interface ResearchProfile {
   earnings_quality: string;
   management_culture: string;
   unknowns: string;
+  industry_profile_id?: string | null;
+  industry_impact?: string;
   checklist_state: ResearchChecklistState;
   source_type: SourceType;
   source_ref: string | null;
@@ -266,7 +306,53 @@ export type ResearchProfileInput = Pick<ResearchProfile, 'asset_name'> & Partial
   'invalidation_conditions' | 'business_model' | 'customer_value' |
   'competitive_advantage' | 'long_term_assumptions' | 'earnings_quality' |
   'management_culture' | 'unknowns' | 'checklist_state' | 'source_type' |
-  'source_ref' | 'review_status'
+  'source_ref' | 'review_status' | 'industry_profile_id' | 'industry_impact'
+>>;
+
+export interface IndustryProfile {
+  id: string;
+  user_id: string;
+  name: string;
+  summary_judgment: string;
+  upstream_overview: string;
+  industry_overview: string;
+  downstream_overview: string;
+  key_drivers: string;
+  risks_and_reversal_signals: string;
+  notes: string;
+  source_type: SourceType;
+  source_ref: string | null;
+  review_status: ReviewStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export type IndustryProfileInput = Pick<IndustryProfile, 'name'> & Partial<Pick<IndustryProfile,
+  'summary_judgment' | 'upstream_overview' | 'industry_overview' | 'downstream_overview' |
+  'key_drivers' | 'risks_and_reversal_signals' | 'notes' | 'source_type' | 'source_ref' | 'review_status'
+>>;
+
+export interface IndustryCompany {
+  id: string; user_id: string; industry_profile_id: string; name: string;
+  stage: IndustryCompanyStage; role: IndustryCompanyRole; importance: string;
+  research_profile_id: string | null; created_at: string; updated_at: string;
+}
+export type IndustryCompanyInput = Pick<IndustryCompany, 'name'> & Partial<Pick<IndustryCompany, 'stage' | 'role' | 'importance' | 'research_profile_id'>>;
+
+export interface IndustryIndicator {
+  id: string; user_id: string; industry_profile_id: string; name: string;
+  current_observation: string; watch_for: string; created_at: string; updated_at: string;
+}
+export type IndustryIndicatorInput = Pick<IndustryIndicator, 'name'> & Partial<Pick<IndustryIndicator, 'current_observation' | 'watch_for'>>;
+
+export interface ExternalVariable {
+  id: string; user_id: string; owner_type: ExternalVariableOwnerType;
+  industry_profile_id: string | null; research_profile_id: string | null;
+  name: string; current_state: string; impact: string; watch_for: string;
+  reversal_signal: string; created_at: string; updated_at: string;
+}
+export type ExternalVariableInput = Pick<ExternalVariable, 'owner_type' | 'name'> & Partial<Pick<ExternalVariable,
+  'industry_profile_id' | 'research_profile_id' | 'current_state' | 'impact' | 'watch_for' | 'reversal_signal'
 >>;
 
 export interface ResearchHypothesis {
@@ -374,6 +460,25 @@ export interface InvestmentReview extends InvestmentReviewInput {
   updated_at: string;
 }
 
+export interface InvestmentJournal extends InvestmentJournalInput {
+  id: string;
+  user_id: string;
+  asset_name: string;
+  tags: string[];
+  references: InvestmentJournalReference[];
+  decision_type?: InvestmentReviewDecisionType;
+  original_reason?: string;
+  actual_result?: string;
+  correct_points?: string;
+  mistake_points?: string;
+  lesson?: string;
+  source_type: SourceType;
+  source_ref: string | null;
+  review_status: ReviewStatus;
+  created_at: string;
+  updated_at: string;
+}
+
 export type MethodologyCategory = 'selection' | 'valuation' | 'position' | 'discipline' | 'review';
 
 export interface MethodologyInput {
@@ -395,6 +500,82 @@ export interface MethodologyItem extends MethodologyInput {
   review_status: ReviewStatus;
   created_at: string;
   updated_at: string;
+}
+
+export type MarketCycleKey = string;
+export type CycleConfidence = 'low' | 'medium' | 'high';
+export type CycleIndicatorValueType = 'number' | 'status' | 'text';
+export type CycleIndicatorDirection = 'up' | 'flat' | 'down' | 'unknown';
+export type CycleIndicatorZone = 'normal' | 'watch' | 'extreme' | 'unknown';
+
+export interface CycleIndicator {
+  id: string;
+  name: string;
+  value_type: CycleIndicatorValueType;
+  value: string | number | null;
+  direction: CycleIndicatorDirection;
+  previous_direction?: CycleIndicatorDirection;
+  zone: CycleIndicatorZone;
+  source: string;
+  observed_on: string | null;
+  update_frequency_days: number;
+  threshold_note: string;
+  note: string;
+  watch_direction_change: boolean;
+  active: boolean;
+}
+
+export interface MarketCycleReviewInput {
+  phase: string;
+  confidence: CycleConfidence | null;
+  summary: string;
+  support_evidence: string;
+  counter_evidence: string;
+  uncertainties: string;
+  next_review_at: string;
+  indicators: CycleIndicator[];
+  cycle_started_on?: string | null;
+  cycle_start_price?: number | null;
+  latest_price?: number | null;
+  latest_price_on?: string | null;
+  return_percent?: number | null;
+  running_days?: number | null;
+}
+
+export interface MarketCycleProfile {
+  id: string;
+  user_id: string;
+  cycle_key: MarketCycleKey;
+  name: string;
+  is_active?: boolean;
+  current_phase: string;
+  confidence: CycleConfidence | null;
+  summary: string;
+  support_evidence?: string;
+  counter_evidence?: string;
+  uncertainties?: string;
+  last_reviewed_at: string | null;
+  next_review_at: string | null;
+  review_frequency_days: number;
+  indicators: CycleIndicator[];
+  cycle_started_on?: string | null;
+  cycle_start_price?: number | null;
+  latest_price?: number | null;
+  latest_price_on?: string | null;
+  return_percent?: number | null;
+  running_days?: number | null;
+  ticker_id?: string | null;
+  ticker?: { id: string; name: string; code: string; currency: string } | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MarketCycleReview extends MarketCycleReviewInput {
+  id: string;
+  user_id: string;
+  profile_id: string;
+  reviewed_on: string;
+  created_at: string;
 }
 
 export interface LifeReinforcementProject {

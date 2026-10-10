@@ -76,4 +76,16 @@ describe('MonthlyEntryPanel', () => {
     expect(principal).not.toBeNull();
     expect(principal?.parentElement).toBe(interest?.parentElement);
   });
+
+  it('shows explicit signed amounts and semantic type tags for income and expense', () => {
+    render(<App><MonthlyEntryPanel entries={[
+      { id:'income', entry_date:'2026-09-30', kind:'business_income', amount_cny:234000, note:'学费' },
+      { id:'expense', entry_date:'2026-09-30', kind:'business_expense', amount_cny:2300, note:'保险' },
+    ]} liabilities={[]} loading={false} onRefresh={vi.fn()} /></App>);
+
+    expect(screen.getByText('+¥234,000.00')).toHaveClass('finance-flow-inflow');
+    expect(screen.getByText('−¥2,300.00')).toHaveClass('finance-flow-outflow');
+    expect(screen.getByText('经营收入').closest('.ant-tag')).not.toBeNull();
+    expect(screen.getByText('经营支出').closest('.ant-tag')).not.toBeNull();
+  });
 });

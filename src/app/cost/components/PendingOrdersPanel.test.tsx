@@ -10,7 +10,7 @@ const tickers: Ticker[] = [
 ];
 
 const orders: PendingOrder[] = [
-  { id: 's1', user_id: 'u1', ticker_id: 'tsla', category: 'stock', side: 'buy', option_action: null, option_type: null, position_id: null, quantity: 5, price: 380, strike_price: null, expiration_date: null, order_date: '2026-09-29', created_at: '', updated_at: '', tickers: { name: '特斯拉', code: 'TSLA', currency: 'USD' } },
+  { id: 's1', user_id: 'u1', ticker_id: 'tsla', category: 'stock', side: 'buy', option_action: null, option_type: null, position_id: null, quantity: 5, price: 380, reference_price: 400, strike_price: null, expiration_date: null, order_date: '2026-09-29', created_at: '', updated_at: '', tickers: { name: '特斯拉', code: 'TSLA', currency: 'USD' } },
   { id: 'o1', user_id: 'u1', ticker_id: 'nvda', category: 'option', side: 'sell', option_action: 'open', option_type: 'put', position_id: 'opt-1', quantity: 1, price: 250, strike_price: 160, expiration_date: '2026-10-17', order_date: '2026-09-30', created_at: '', updated_at: '', tickers: { name: '英伟达', code: 'NVDA', currency: 'USD' } },
 ];
 
@@ -25,6 +25,9 @@ describe('PendingOrdersPanel', () => {
   it('uses separate stock and option columns', () => {
     renderPanel();
     expect(screen.getAllByText('挂单价').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('参考价格').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('距参考价').length).toBeGreaterThan(0);
+    expect(screen.getByText('-5.00%')).toBeInTheDocument();
     fireEvent.click(screen.getByText('期权挂单 1'));
     expect(screen.getAllByText('行权价').length).toBeGreaterThan(0);
     expect(screen.getAllByText('到期日').length).toBeGreaterThan(0);

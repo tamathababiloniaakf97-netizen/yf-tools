@@ -24,29 +24,65 @@ function stubItems(data: MethodologyItem[]) {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('MethodologyPage filtering', () => {
+  it('使用左侧列表切换右侧阅读详情', async () => {
+    stubItems(items);
+    render(<App><MethodologyPage /></App>);
+
+    expect(await screen.findByRole('heading', { name: '现金流优先', level: 2 })).toBeInTheDocument();
+    const divider = screen.getByRole('separator', { name: '调整列表宽度' });
+    expect(divider.parentElement).toHaveAttribute('data-storage-key', 'life-os:investment-methodology:left-width');
+    fireEvent.click(screen.getByRole('button', { name: /分批建仓/ }));
+
+    expect(screen.getByRole('heading', { name: '分批建仓', level: 2 })).toBeInTheDocument();
+    expect(screen.getByText('待确认', { selector: '.methodology-reader .ant-tag' })).toBeInTheDocument();
+  });
+
+  it('编辑时预填当前方法并通过 PATCH 保存', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.method === 'PATCH') return { ok: true, json: async () => ({ ...items[0], title: '现金流与资本开支' }) } as Response;
+      return { ok: true, json: async () => items } as Response;
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    render(<App><MethodologyPage /></App>);
+    await screen.findByRole('heading', { name: '现金流优先', level: 2 });
+
+    fireEvent.click(screen.getByRole('button', { name: /编辑$/ }));
+    expect(screen.getByRole('dialog')).toHaveTextContent('编辑投资方法');
+    expect(screen.getByLabelText('方法标题')).toHaveValue('现金流优先');
+    expect(screen.getByLabelText('规则内容')).toHaveValue('估值时检查自由现金流。');
+
+    fireEvent.change(screen.getByLabelText('方法标题'), { target: { value: '现金流与资本开支' } });
+    fireEvent.click(screen.getByRole('button', { name: /保\s*存/ }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/investment/methodology/m1', expect.objectContaining({
+      method: 'PATCH',
+      body: expect.stringContaining('"review_status":"approved"'),
+    })));
+  });
+
   it('同时应用关键词和分类筛选，并保留筛选条件直到用户修改', async () => {
     stubItems(items);
     render(<App><MethodologyPage /></App>);
-    await screen.findByText('现金流优先');
+    await screen.findByRole('heading', { name: '现金流优先', level: 2 });
 
     fireEvent.change(screen.getByPlaceholderText('搜索标题或规则内容'), { target: { value: '仓位' } });
     fireEvent.click(screen.getByText('仓位', { selector: '.ant-segmented-item-label' }));
 
-    expect(screen.getByText('分批建仓')).toBeInTheDocument();
-    expect(screen.queryByText('现金流优先')).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '分批建仓', level: 2 })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: '现金流优先', level: 2 })).not.toBeInTheDocument();
     expect(screen.getByPlaceholderText('搜索标题或规则内容')).toHaveValue('仓位');
   });
 
   it('有记录但筛选无结果时显示可清除的筛选空状态', async () => {
     stubItems(items);
     render(<App><MethodologyPage /></App>);
-    await screen.findByText('现金流优先');
+    await screen.findByRole('heading', { name: '现金流优先', level: 2 });
 
     fireEvent.change(screen.getByPlaceholderText('搜索标题或规则内容'), { target: { value: '不存在' } });
     expect(screen.getByText('没有匹配的方法')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: '清除筛选' }));
-    await waitFor(() => expect(screen.getByText('现金流优先')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('heading', { name: '现金流优先', level: 2 })).toBeInTheDocument());
     expect(screen.getByPlaceholderText('搜索标题或规则内容')).toHaveValue('');
   });
 

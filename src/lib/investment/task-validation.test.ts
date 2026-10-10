@@ -15,6 +15,13 @@ describe('investment task validation', () => {
   it('requires automation provenance', () => {
     expect(validateInvestmentTaskInput({ task_type: 'validation', title: '等待验证', source_type: 'automation' }).ok).toBe(false);
   });
+  it('requires a linked ticker for a positive reference price', () => {
+    expect(validateInvestmentTaskInput({ task_type: 'price', title: '观察腾讯', price: 420 }).ok).toBe(false);
+    expect(validateInvestmentTaskInput({ task_type: 'price', title: '观察腾讯', ticker_id: ' ticker-1 ', price: 420 })).toMatchObject({
+      ok: true, value: { ticker_id: 'ticker-1', price: 420 },
+    });
+    expect(validateInvestmentTaskInput({ task_type: 'price', title: '观察腾讯', ticker_id: 'ticker-1', price: 0 }).ok).toBe(false);
+  });
   it('sets completion time only for completed tasks', () => {
     const completed = validateInvestmentTaskInput({ task_type: 'other', title: '已做', status: 'completed' });
     expect(completed).toMatchObject({ ok: true, value: { status: 'completed' } });

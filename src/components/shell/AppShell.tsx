@@ -34,7 +34,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     <AuthSessionContext.Provider value={{ user, loading: authLoading }}>
       <Layout className="life-os-layout">
       <Layout.Sider className="life-os-sider" width={232} breakpoint="lg" collapsedWidth={0} theme="dark">
-        <AppSidebar pathname={pathname} onNavigate={(href) => router.push(href)} />
+        <AppSidebar pathname={pathname} onNavigate={(href) => router.push(href)} onPrefetch={(href) => router.prefetch(href)} />
       </Layout.Sider>
       <Layout className="life-os-content-layout">
         <header className="life-os-topbar">

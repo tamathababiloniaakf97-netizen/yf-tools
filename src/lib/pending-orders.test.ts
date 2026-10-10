@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildTransactionFromPendingOrder, validatePendingOrderInput } from './pending-orders';
+import { buildTransactionFromPendingOrder, calculatePendingOrderDeviation, validatePendingOrderInput } from './pending-orders';
 import type { PendingOrder, Ticker } from '@/types';
 
 const ticker: Ticker = {
@@ -40,8 +40,19 @@ describe('pending order validation', () => {
   it('accepts a valid stock order', () => {
     expect(validatePendingOrderInput({
       ticker_id: 'ticker-1', category: 'stock', side: 'buy', quantity: 10,
-      price: 165, order_date: '2026-09-30',
-    })).toMatchObject({ ok: true });
+      price: 165, reference_price: 170, order_date: '2026-09-30',
+    })).toMatchObject({ ok: true, value: { reference_price: 170 } });
+  });
+
+  it('rejects a non-positive reference price and drops it from option orders', () => {
+    expect(validatePendingOrderInput({ ticker_id: 'ticker-1', category: 'stock', side: 'buy', quantity: 1, price: 165, reference_price: 0, order_date: '2026-09-30' })).toEqual({ ok: false, error: '参考价格必须大于 0' });
+    expect(validatePendingOrderInput({ ticker_id: 'ticker-1', category: 'option', side: 'sell', option_action: 'open', option_type: 'put', quantity: 1, price: 200, reference_price: 170, strike_price: 160, expiration_date: '2026-10-17', order_date: '2026-09-30' })).toMatchObject({ ok: true, value: { reference_price: null } });
+  });
+
+  it('calculates signed distance from the manual reference price', () => {
+    expect(calculatePendingOrderDeviation(400, 420)).toBeCloseTo(-4.7619, 4);
+    expect(calculatePendingOrderDeviation(420, 400)).toBeCloseTo(5, 8);
+    expect(calculatePendingOrderDeviation(420, null)).toBeNull();
   });
 
   it('rejects non-positive quantity and price', () => {
@@ -66,11 +77,13 @@ describe('pending order validation', () => {
 
 describe('pending order conversion', () => {
   it('maps a stock order to a normal transaction', () => {
-    const order = optionOrder({ category: 'stock', side: 'buy', option_action: null, option_type: null, position_id: null, strike_price: null, expiration_date: null, quantity: 10, price: 165 });
-    expect(buildTransactionFromPendingOrder(order, ticker, '2026-10-01')).toMatchObject({
+    const order = optionOrder({ category: 'stock', side: 'buy', option_action: null, option_type: null, position_id: null, strike_price: null, expiration_date: null, quantity: 10, price: 165, reference_price: 170 });
+    const transaction = buildTransactionFromPendingOrder(order, ticker, '2026-10-01');
+    expect(transaction).toMatchObject({
       ticker_id: 'ticker-1', type: 'buy', quantity: 10, price: 165,
       amount_orig: 1650, amount_usd: 1650, currency: 'USD', trade_date: '2026-10-01',
     });
+    expect(transaction).not.toHaveProperty('reference_price');
   });
 
   it('uses already-multiplied option premium without another x100', () => {

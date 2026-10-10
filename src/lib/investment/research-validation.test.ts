@@ -14,8 +14,8 @@ const completeProfile: ResearchProfileInput = {
 
 describe('research validation', () => {
   it('normalizes a research draft without requiring complete core answers', () => {
-    const result = normalizeResearchProfileInput({ asset_name: ' 腾讯 ', business_model: ' 平台收入 ' });
-    expect(result).toMatchObject({ ok: true, value: { asset_name: '腾讯', business_model: '平台收入', checklist_state: {} } });
+    const result = normalizeResearchProfileInput({ asset_name: ' 腾讯 ', business_model: ' 平台收入 ', industry_profile_id: 'industry-1', industry_impact: ' 需求增长 ' });
+    expect(result).toMatchObject({ ok: true, value: { asset_name: '腾讯', business_model: '平台收入', checklist_state: {}, industry_profile_id: 'industry-1', industry_impact: '需求增长' } });
   });
 
   it('requires all six core answers before snapshotting', () => {

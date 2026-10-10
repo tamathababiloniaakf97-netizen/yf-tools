@@ -16,6 +16,8 @@
 6. `supabase/migrations/008_relationship_history_birthdays.sql`
 7. `supabase/migrations/009_investment_tasks.sql`
 8. `supabase/migrations/010_research_decisions.sql`
+9. `supabase/migrations/030_lightweight_industry_research.sql`
+10. `supabase/migrations/033_cycle_anchor_progress.sql`
 
 这些迁移只新增人生工作台表、字段、索引、触发器和 RLS 策略，不修改现有持仓、交易、标的和净值数据。执行前仍建议在 Supabase 做一次数据库备份。未执行迁移时，原持仓功能可继续使用，新页面会显示明确的未连接提示。
 
@@ -30,6 +32,10 @@
 迁移 009 新增独立的 `investment_tasks` 表和用户级 RLS，不修改通用计划、持仓、交易或价格数据。
 
 迁移 010 只为公司研究增加结构化字段，并新增研究快照、投资决策和复盘关联。它不删除、拆分或重写已有公司研究、证据、复盘、持仓与交易数据；旧投资逻辑原样保留，用户可逐步整理到新框架。
+
+迁移 030 新增轻量行业研究、核心企业、关键指标和外部变量，并为公司研究增加可选行业关联。它不改写已有公司研究；旧记录升级后行业关联为空，可继续正常使用。
+
+迁移 033 为周期观察增加可选的手工启动日期、启动价格、最新价格和复核时计算结果。所有字段允许为空，不改写旧周期档案或历史复核。
 
 ## 验收重点
 

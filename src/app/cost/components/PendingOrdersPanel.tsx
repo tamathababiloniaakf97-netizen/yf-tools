@@ -7,6 +7,7 @@ import dayjs, { type Dayjs } from 'dayjs';
 import type { ColumnsType } from 'antd/es/table';
 import type { OptionPosition, PendingOrder, PendingOrderCategory, Ticker } from '@/types';
 import PendingOrderModal from './PendingOrderModal';
+import { calculatePendingOrderDeviation } from '@/lib/pending-orders';
 
 interface Props {
   orders: PendingOrder[];
@@ -66,6 +67,8 @@ export default function PendingOrdersPanel({ orders, tickers, openPositions, loa
     { title: '方向', dataIndex: 'side', render: (side) => <Tag color={side === 'buy' ? 'red' : 'green'}>{side === 'buy' ? '买入' : '卖出'}</Tag> },
     { title: '数量', dataIndex: 'quantity' },
     { title: '挂单价', dataIndex: 'price', render: (price: number) => `$${price.toFixed(4)}` },
+    { title: '参考价格', dataIndex: 'reference_price', render: (price: number | null) => price == null ? '—' : `$${price.toFixed(4)}` },
+    { title: '距参考价', key: 'deviation', render: (_, order) => { const value = calculatePendingOrderDeviation(order.price, order.reference_price); return value == null ? '—' : <Tag color={value > 0 ? 'red' : value < 0 ? 'green' : 'default'}>{value > 0 ? '+' : ''}{value.toFixed(2)}%</Tag>; } },
     { title: '挂单日期', dataIndex: 'order_date' },
     { title: '操作', key: 'actions', width: 260, render: actions },
   ];
@@ -91,7 +94,7 @@ export default function PendingOrdersPanel({ orders, tickers, openPositions, loa
           <Button icon={<PlusOutlined />} onClick={() => { setEditing(null); setModalOpen(true); }}>新增{category === 'stock' ? '股票' : '期权'}挂单</Button>
         </Space>
       </div>
-      <Table rowKey="id" size="small" loading={loading} dataSource={filtered} columns={category === 'stock' ? stockColumns : optionColumns} pagination={false} scroll={{ x: category === 'option' ? 1200 : 800 }} locale={{ emptyText: '暂无待成交挂单' }} />
+      <Table rowKey="id" size="small" loading={loading} dataSource={filtered} columns={category === 'stock' ? stockColumns : optionColumns} pagination={false} scroll={{ x: category === 'option' ? 1200 : 1000 }} locale={{ emptyText: '暂无待成交挂单' }} />
       <PendingOrderModal open={modalOpen} category={category} order={editing} tickers={tickers} openPositions={openPositions} onClose={() => setModalOpen(false)} onSuccess={onRefresh} />
       <Modal title="确认成交" open={!!converting} onCancel={() => setConverting(null)} onOk={convert} okText="确认并转为流水">
         <p>成交日期默认今天；补录历史成交时可以修改。</p>

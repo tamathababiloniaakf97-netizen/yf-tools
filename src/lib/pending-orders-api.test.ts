@@ -28,7 +28,7 @@ describe('pending order service', () => {
       update: vi.fn(),
     };
     await createPendingOrder('user-1', { ...validStock, ignored: 'unsafe' } as typeof validStock, repository);
-    expect(repository.insert).toHaveBeenCalledWith({ user_id: 'user-1', ...validStock });
+    expect(repository.insert).toHaveBeenCalledWith({ user_id: 'user-1', ...validStock, reference_price: null });
   });
 
   it('refuses to update an order owned by another user', async () => {

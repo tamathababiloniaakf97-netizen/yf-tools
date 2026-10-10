@@ -6,6 +6,7 @@ export type DueReminderKind =
   | 'birthday_today'
   | 'investment_task_overdue'
   | 'investment_task_today'
+  | 'investment_task_price'
   | 'finance_entry_review'
   | 'goal_action_overdue'
   | 'goal_action_today';
@@ -19,4 +20,7 @@ export interface DueReminder {
   kind: DueReminderKind;
   due_date: string | null;
   href: string;
+  ticker_id?: string | null;
+  reference_price?: number | null;
+  currency?: string | null;
 }

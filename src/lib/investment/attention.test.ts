@@ -65,6 +65,21 @@ describe('buildInvestmentAttentionItems', () => {
     expect(result).toEqual([]);
   });
 
+  it('puts active priced tasks first regardless of reminder date', () => {
+    const result = buildInvestmentAttentionItems({
+      tasks: [
+        task({ id: 'priced', title: '400买入', ticker_id: 'ticker-1', price: 400, reminder_date: '2026-12-01', updated_at: '2026-10-01T00:00:00Z' }),
+        task({ id: 'due', reminder_date: '2026-10-01' }),
+        task({ id: 'cancelled-price', ticker_id: 'ticker-1', price: 390, status: 'cancelled' }),
+      ],
+      watchItems: [], now,
+    });
+    expect(result.map((item) => [item.sourceId, item.reason, item.task?.price])).toEqual([
+      ['priced', '价格关注', 400],
+      ['due', '今天提醒', undefined],
+    ]);
+  });
+
   it('keeps an explicitly dated paused watch item visible and supports a display limit', () => {
     const result = buildInvestmentAttentionItems({
       tasks: [task({ id: 'task-late', reminder_date: '2026-09-28' })],

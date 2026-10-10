@@ -53,6 +53,8 @@ export interface HouseholdFinanceItem {
   current_value_cny: number;
   valuation_date: string;
   note: string;
+  calibration_date?: string;
+  principal_paid_after_calibration?: number;
   created_at?: string;
 }
 

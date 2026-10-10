@@ -27,7 +27,7 @@ export default function MethodologyFilters({
   onCategoryChange,
 }: MethodologyFiltersProps) {
   return (
-    <Space direction="vertical" size={12} style={{ width: '100%' }}>
+    <Space orientation="vertical" size={12} style={{ width: '100%' }}>
       <Input
         allowClear
         prefix={<SearchOutlined />}
