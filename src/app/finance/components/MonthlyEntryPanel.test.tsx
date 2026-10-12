@@ -88,4 +88,17 @@ describe('MonthlyEntryPanel', () => {
     expect(screen.getByText('经营收入').closest('.ant-tag')).not.toBeNull();
     expect(screen.getByText('经营支出').closest('.ant-tag')).not.toBeNull();
   });
+
+  it('shows the linked liability name for repayment entries', () => {
+    render(<App><MonthlyEntryPanel entries={[
+      { id:'principal', entry_date:'2026-09-30', kind:'loan_principal_payment', amount_cny:3000, liability_id:'loan-1', note:'' },
+      { id:'interest', entry_date:'2026-09-30', kind:'loan_interest', amount_cny:500, liability_id:'loan-1', note:'' },
+    ]} liabilities={[
+      { id:'loan-1', item_type:'liability', category:'房贷', name:'住房贷款', owner:'joint', current_value_cny:100000, valuation_date:'2026-09-30', note:'' },
+    ]} loading={false} onRefresh={vi.fn()} /></App>);
+
+    fireEvent.click(screen.getByText('其他大额事项'));
+    expect(screen.getByText('对应负债')).toBeInTheDocument();
+    expect(screen.getAllByText('住房贷款')).toHaveLength(2);
+  });
 });
