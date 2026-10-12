@@ -3,15 +3,24 @@ import { createServerSideClient } from '@/lib/supabase/server';
 
 const tables = { account: 'household_accounts', asset: 'household_assets', liability: 'household_liabilities' } as const;
 const snapshotTables = { account: 'household_account_snapshots', asset: 'household_asset_snapshots', liability: 'household_liability_snapshots' } as const;
+const typeNames = { account:'现金账户', asset:'资产', liability:'负债' } as const;
+
+async function findCategory(supabase: Awaited<ReturnType<typeof createServerSideClient>>, userId:string, itemType:keyof typeof tables, categoryId?:string) {
+  if(!categoryId)return null;
+  const {data}=await supabase.from('household_item_categories').select('id,name,item_type,is_active').eq('id',categoryId).eq('user_id',userId).eq('item_type',itemType).maybeSingle();
+  return data;
+}
 
 export async function POST(request: Request) {
   const supabase = await createServerSideClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: '未登录' }, { status: 401 });
-  const body = await request.json() as { item_type?: keyof typeof tables; name?: string; category?: string; owner?: string; note?: string; value_cny?: number; valuation_date?: string };
+  const body = await request.json() as { item_type?: keyof typeof tables; name?: string; category_id?: string; owner?: string; note?: string; value_cny?: number; valuation_date?: string };
   if (!body.item_type || !tables[body.item_type]) return NextResponse.json({ error: '无效项目类型' }, { status: 400 });
-  if (!body.name?.trim() || !body.category || !['self','spouse','joint'].includes(body.owner || '') || !Number.isFinite(body.value_cny) || (body.value_cny ?? -1) < 0 || !body.valuation_date) return NextResponse.json({ error: '请完整填写名称、类别、归属、金额和估值日期' }, { status: 400 });
-  const { data: item, error } = await supabase.from(tables[body.item_type]).insert({ user_id: user.id, name: body.name.trim(), category: body.category, owner: body.owner, note: body.note?.trim() || '' }).select().single();
+  if (!body.name?.trim() || !body.category_id || !['self','spouse','joint'].includes(body.owner || '') || !Number.isFinite(body.value_cny) || (body.value_cny ?? -1) < 0 || !body.valuation_date) return NextResponse.json({ error: '请完整填写名称、类别、归属、金额和估值日期' }, { status: 400 });
+  const category=await findCategory(supabase,user.id,body.item_type,body.category_id);
+  if(!category?.is_active)return NextResponse.json({error:`请选择有效的${typeNames[body.item_type]}类别`},{status:400});
+  const { data: item, error } = await supabase.from(tables[body.item_type]).insert({ user_id: user.id, name: body.name.trim(), category_id:category.id, category: category.name, owner: body.owner, note: body.note?.trim() || '' }).select().single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   const foreignKey = `${body.item_type}_id`;
   const { error: snapshotError } = await supabase.from(snapshotTables[body.item_type]).insert({ user_id: user.id, [foreignKey]: item.id, snapshot_date: body.valuation_date, value_cny: body.value_cny });
@@ -26,10 +35,12 @@ export async function PATCH(request: Request) {
   const supabase = await createServerSideClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: '未登录' }, { status: 401 });
-  const body = await request.json() as { item_type?: keyof typeof tables; id?: string; name?: string; category?: string; owner?: string; note?: string };
+  const body = await request.json() as { item_type?: keyof typeof tables; id?: string; name?: string; category_id?: string; owner?: string; note?: string };
   if (!body.item_type || !tables[body.item_type] || !body.id) return NextResponse.json({ error: '无效项目' }, { status: 400 });
-  if (!body.name?.trim() || !body.category?.trim() || !['self','spouse','joint'].includes(body.owner || '')) return NextResponse.json({ error: '请完整填写名称、类别和归属' }, { status: 400 });
-  const values = { name: body.name.trim(), category: body.category.trim(), owner: body.owner, note: body.note?.trim() || '' };
+  if (!body.name?.trim() || !body.category_id || !['self','spouse','joint'].includes(body.owner || '')) return NextResponse.json({ error: '请完整填写名称、类别和归属' }, { status: 400 });
+  const category=await findCategory(supabase,user.id,body.item_type,body.category_id);
+  if(!category)return NextResponse.json({error:`请选择有效的${typeNames[body.item_type]}类别`},{status:400});
+  const values = { name: body.name.trim(), category_id:category.id, category:category.name, owner: body.owner, note: body.note?.trim() || '' };
   const { data, error } = await supabase.from(tables[body.item_type]).update(values).eq('id', body.id).eq('user_id', user.id).select().maybeSingle();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!data) return NextResponse.json({ error: '项目不存在或无权操作' }, { status: 404 });

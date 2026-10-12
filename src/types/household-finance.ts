@@ -1,4 +1,15 @@
 export type HouseholdOwner = 'self' | 'spouse' | 'joint';
+export type HouseholdItemType = 'account' | 'asset' | 'liability';
+
+export interface HouseholdItemCategory {
+  id: string;
+  user_id?: string;
+  item_type: HouseholdItemType;
+  name: string;
+  system_key?: 'cash' | 'bank' | 'real_estate' | 'vehicle' | 'other_asset' | 'mortgage' | 'credit_loan' | 'credit_card' | 'other_liability' | null;
+  is_active: boolean;
+  created_at?: string;
+}
 export type HouseholdEntryKind =
   | 'business_income' | 'business_expense' | 'business_refund'
   | 'household_income' | 'household_expense' | 'investment_income'
@@ -46,7 +57,8 @@ export interface HouseholdStatements {
 
 export interface HouseholdFinanceItem {
   id: string;
-  item_type: 'account' | 'asset' | 'liability';
+  item_type: HouseholdItemType;
+  category_id?: string | null;
   category: string;
   name: string;
   owner: HouseholdOwner;

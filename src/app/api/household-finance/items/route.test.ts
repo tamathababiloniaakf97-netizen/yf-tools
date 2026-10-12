@@ -11,16 +11,27 @@ const request = (method: string, body: unknown) => new Request('http://localhost
 describe('/api/household-finance/items mutations', () => {
   beforeEach(() => { user = { id: 'u1' }; from.mockReset(); });
 
-  it('updates only editable metadata on the authenticated item', async () => {
+  it('updates metadata with a category that belongs to the same item type', async () => {
+    const categorySingle = vi.fn(async () => ({ data: { id:'cat-1', name:'房产', item_type:'asset', is_active:true }, error:null }));
     const maybeSingle = vi.fn(async () => ({ data: { id: 'a1' }, error: null }));
     const select = vi.fn(() => ({ maybeSingle }));
     const eqUser = vi.fn(() => ({ select }));
     const eqId = vi.fn(() => ({ eq: eqUser }));
     const update = vi.fn(() => ({ eq: eqId }));
-    from.mockReturnValue({ update });
-    const response = await PATCH(request('PATCH', { item_type:'asset', id:'a1', name:'住房', category:'房产', owner:'joint', note:'自住', value_cny:1 }));
+    from.mockImplementation((table:string) => table === 'household_item_categories'
+      ? { select: () => ({ eq: () => ({ eq: () => ({ eq: () => ({ maybeSingle: categorySingle }) }) }) }) }
+      : { update });
+    const response = await PATCH(request('PATCH', { item_type:'asset', id:'a1', name:'住房', category_id:'cat-1', owner:'joint', note:'自住', value_cny:1 }));
     expect(response.status).toBe(200);
-    expect(update).toHaveBeenCalledWith({ name:'住房', category:'房产', owner:'joint', note:'自住' });
+    expect(update).toHaveBeenCalledWith({ name:'住房', category_id:'cat-1', category:'房产', owner:'joint', note:'自住' });
+  });
+
+  it('rejects a category from a different item type', async () => {
+    const maybeSingle = vi.fn(async () => ({ data:null, error:null }));
+    from.mockReturnValue({ select: () => ({ eq: () => ({ eq: () => ({ eq: () => ({ maybeSingle }) }) }) }) });
+    const response = await PATCH(request('PATCH', { item_type:'asset', id:'a1', name:'住房', category_id:'liability-cat', owner:'joint' }));
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error:'请选择有效的资产类别' });
   });
 
   it('returns a clear conflict when a liability has repayment history', async () => {
