@@ -53,4 +53,21 @@ describe('BalanceSheetPanel', () => {
     expect(screen.getByRole('dialog',{name:'管理类别标签'})).toBeInTheDocument();
     expect(screen.getByPlaceholderText('新增现金账户类别')).toBeInTheDocument();
   });
+
+  it('summarizes property equity, leverage and current-period mortgage payments', () => {
+    render(<App><BalanceSheetPanel items={[
+      {...item,current_value_cny:1000000},
+      {...liability,current_value_cny:400000},
+    ]} categories={categories} entries={[
+      {entry_date:'2026-09-30',kind:'loan_principal_payment',amount_cny:3000,liability_id:'l1'},
+      {entry_date:'2026-09-30',kind:'loan_interest',amount_cny:500,liability_id:'l1'},
+    ]} onRefresh={vi.fn()}/></App>);
+    expect(screen.getByText('房产组合')).toBeInTheDocument();
+    expect(screen.getByText('房产估值')).toBeInTheDocument();
+    expect(screen.getByText('房产净值')).toBeInTheDocument();
+    expect(screen.getByText('LTV')).toBeInTheDocument();
+    expect(screen.getByText('40.00%')).toBeInTheDocument();
+    expect(screen.getByText('期间偿还本金')).toBeInTheDocument();
+    expect(screen.getByText('期间贷款利息')).toBeInTheDocument();
+  });
 });

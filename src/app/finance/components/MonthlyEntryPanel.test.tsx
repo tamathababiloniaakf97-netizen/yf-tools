@@ -66,7 +66,7 @@ describe('MonthlyEntryPanel', () => {
     fireEvent.click(batchControls[batchControls.length - 1]);
     expect(screen.getByText('房贷还款')).toBeInTheDocument();
     expect(screen.getByText('信用贷还款')).toBeInTheDocument();
-    expect(screen.getByText('信用卡还款')).toBeInTheDocument();
+    expect(screen.getAllByText('信用卡还款').length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: '保存本行' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '新增还款行' }));
     expect(screen.getAllByRole('button', { name: '保存本行' })).toHaveLength(2);
@@ -83,10 +83,28 @@ describe('MonthlyEntryPanel', () => {
       { id:'expense', entry_date:'2026-09-30', kind:'business_expense', amount_cny:2300, note:'保险' },
     ]} liabilities={[]} loading={false} onRefresh={vi.fn()} /></App>);
 
-    expect(screen.getByText('+¥234,000.00')).toHaveClass('finance-flow-inflow');
-    expect(screen.getByText('−¥2,300.00')).toHaveClass('finance-flow-outflow');
+    expect(screen.getAllByText('+¥234,000.00').some(element=>element.classList.contains('finance-flow-inflow'))).toBe(true);
+    expect(screen.getAllByText('−¥2,300.00').some(element=>element.classList.contains('finance-flow-outflow'))).toBe(true);
     expect(screen.getByText('经营收入').closest('.ant-tag')).not.toBeNull();
-    expect(screen.getByText('经营支出').closest('.ant-tag')).not.toBeNull();
+    expect(screen.getAllByText('经营支出').some(element=>Boolean(element.closest('.ant-tag')))).toBe(true);
+    expect(screen.getByText('净收入')).toBeInTheDocument();
+    expect(screen.getByText('+¥231,700.00')).toBeInTheDocument();
+    expect(screen.getByText('经营结余')).toBeInTheDocument();
+  });
+
+  it('shows professional capital summaries without counting principal as an expense', () => {
+    render(<App><MonthlyEntryPanel entries={[
+      {id:'purchase',entry_date:'2026-09-30',kind:'asset_purchase',amount_cny:100000},
+      {id:'loan',entry_date:'2026-09-30',kind:'loan_drawdown',amount_cny:50000},
+      {id:'principal',entry_date:'2026-09-30',kind:'loan_principal_payment',amount_cny:3000},
+      {id:'interest',entry_date:'2026-09-30',kind:'loan_interest',amount_cny:500},
+    ]} liabilities={[]} loading={false} onRefresh={vi.fn()}/></App>);
+    fireEvent.click(screen.getByText('其他大额事项'));
+    expect(screen.getByText('资产交易净额')).toBeInTheDocument();
+    expect(screen.getByText('借贷净额')).toBeInTheDocument();
+    expect(screen.getAllByText('贷款利息').length).toBeGreaterThan(0);
+    expect(screen.getByText('大额事项净现金')).toBeInTheDocument();
+    expect(screen.getByText(/本页共 4 笔/)).toBeInTheDocument();
   });
 
   it('shows the linked liability name for repayment entries', () => {
@@ -111,7 +129,7 @@ describe('MonthlyEntryPanel', () => {
     ]} liabilities={[]} loading={false} onRefresh={vi.fn()} /></App>);
 
     fireEvent.click(screen.getByText('其他大额事项'));
-    expect(screen.getByText('贷款利息').closest('.ant-tag')).toHaveClass('ant-tag-orange');
+    expect(screen.getAllByText('贷款利息').find(element=>element.closest('.ant-tag'))?.closest('.ant-tag')).toHaveClass('ant-tag-orange');
     expect(screen.getByText('偿还本金').closest('.ant-tag')).toHaveClass('ant-tag-blue');
     expect(screen.getByText('偿还信用卡').closest('.ant-tag')).toHaveClass('ant-tag-purple');
     expect(screen.getByText('新增借款').closest('.ant-tag')).toHaveClass('ant-tag-green');

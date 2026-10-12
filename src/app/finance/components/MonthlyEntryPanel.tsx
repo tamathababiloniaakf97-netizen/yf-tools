@@ -6,6 +6,7 @@ import { entryGuidance } from '@/lib/household-finance/entry-guidance';
 import { buildPriorMonthEntryDrafts } from '@/lib/household-finance/prior-month-entries';
 import { entryFlow, flowClassName, formatFlowAmount } from '@/lib/household-finance/amount-presentation';
 import BatchRepaymentPanel from './BatchRepaymentPanel';
+import EntryScopeSummary from './EntryScopeSummary';
 import type { HouseholdEntryKind, HouseholdFinanceItem, HouseholdLedgerEntry } from '@/types/household-finance';
 
 type Scope = 'business' | 'household' | 'capital';
@@ -156,6 +157,7 @@ export default function MonthlyEntryPanel({ selectedPeriod = dayjs().format('YYY
   const formBody = active === 'capital' ? capitalBody : editing ? singleFormBody : batchFormBody;
   return <Space orientation="vertical" size="middle" style={{width:'100%'}}>
     <Tabs activeKey={active} onChange={changeScope} items={[{key:'business',label:'经营收支'},{key:'household',label:'家庭收支'},{key:'capital',label:'其他大额事项'}]} />
+    <EntryScopeSummary scope={active} entries={entries}/>
     {formBody}{priorDrawer}
     <Table rowKey={row => row.id || `${row.entry_date}-${row.note}`} loading={loading} dataSource={visibleEntries} pagination={{pageSize:10}} columns={[{title:'收付款日期',dataIndex:'entry_date'},{title:'录入时间',dataIndex:'created_at',render:(value?:string)=>formatRecordedAt(value)},{title:'类型',dataIndex:'kind',render:(value:HouseholdEntryKind)=><Tag color={kindTagColor(value)}>{kindLabels[value]||value}</Tag>},{title:'对应负债',dataIndex:'liability_id',render:(value?:string|null)=>value ? liabilityNames.get(value) || '已删除负债' : '—'},{title:'金额',dataIndex:'amount_cny',align:'right',render:(value:number,entry)=>{const flow=entryFlow(entry.kind);return <span className={flowClassName(flow)}>{formatFlowAmount(value,flow)}</span>}},{title:'备注',dataIndex:'note'},{title:'操作',render:(_,entry)=><Space><Button type="link" onClick={()=>edit(entry)}>编辑</Button><Popconfirm title="确认删除？" onConfirm={()=>void remove(entry)}><Button danger type="link">删除</Button></Popconfirm></Space>}]} />
   </Space>;
