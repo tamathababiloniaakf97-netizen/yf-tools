@@ -23,7 +23,14 @@ const kindLabels: Partial<Record<HouseholdEntryKind, string>> = {
 };
 const defaultKind: Record<Scope, FormKind> = { business: 'business_income', household: 'household_expense', capital: 'asset_purchase' };
 const liabilityKinds: FormKind[] = ['mortgage_repayment', 'credit_loan_repayment', 'loan_drawdown', 'loan_principal_payment', 'loan_interest', 'credit_card_payment'];
-const kindTagColor = (kind: HouseholdEntryKind) => entryFlow(kind) === 'inflow' ? 'green' : entryFlow(kind) === 'outflow' ? 'red' : 'default';
+const debtKindColors: Partial<Record<HouseholdEntryKind, string>> = {
+  loan_interest: 'orange',
+  loan_principal_payment: 'blue',
+  credit_card_payment: 'purple',
+  loan_drawdown: 'green',
+};
+const kindTagColor = (kind: HouseholdEntryKind) => debtKindColors[kind]
+  ?? (entryFlow(kind) === 'inflow' ? 'green' : entryFlow(kind) === 'outflow' ? 'red' : 'default');
 export const capitalEntryOptions = [{label:'资产购置',value:'asset_purchase'},{label:'资产处置',value:'asset_sale'},{label:'新增借款',value:'loan_drawdown'},{label:'房贷还款',value:'mortgage_repayment'},{label:'信用贷还款',value:'credit_loan_repayment'},{label:'信用卡还款',value:'credit_card_payment'},{label:'投资转入',value:'investment_transfer_in'},{label:'投资转出',value:'investment_transfer_out'}];
 
 function formatRecordedAt(value?: string) {

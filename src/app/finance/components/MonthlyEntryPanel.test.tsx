@@ -101,4 +101,19 @@ describe('MonthlyEntryPanel', () => {
     expect(screen.getByText('对应负债')).toBeInTheDocument();
     expect(screen.getAllByText('住房贷款')).toHaveLength(2);
   });
+
+  it('uses semantic colors for debt entry types', () => {
+    render(<App><MonthlyEntryPanel entries={[
+      { id:'interest', entry_date:'2026-09-30', kind:'loan_interest', amount_cny:500, liability_id:'loan-1' },
+      { id:'principal', entry_date:'2026-09-30', kind:'loan_principal_payment', amount_cny:3000, liability_id:'loan-1' },
+      { id:'card', entry_date:'2026-09-30', kind:'credit_card_payment', amount_cny:2000, liability_id:'card-1' },
+      { id:'drawdown', entry_date:'2026-09-30', kind:'loan_drawdown', amount_cny:10000, liability_id:'loan-1' },
+    ]} liabilities={[]} loading={false} onRefresh={vi.fn()} /></App>);
+
+    fireEvent.click(screen.getByText('其他大额事项'));
+    expect(screen.getByText('贷款利息').closest('.ant-tag')).toHaveClass('ant-tag-orange');
+    expect(screen.getByText('偿还本金').closest('.ant-tag')).toHaveClass('ant-tag-blue');
+    expect(screen.getByText('偿还信用卡').closest('.ant-tag')).toHaveClass('ant-tag-purple');
+    expect(screen.getByText('新增借款').closest('.ant-tag')).toHaveClass('ant-tag-green');
+  });
 });
