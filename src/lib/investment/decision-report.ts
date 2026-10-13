@@ -94,3 +94,8 @@ export function buildDecisionPdfFilename(assetName: string, decisionDate: string
   const safeAsset = assetName.trim().replace(/[<>:"/\\|?*\u0000-\u001F]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || '未命名标的';
   return `${safeAsset}-投资决策-${decisionDate || dateInShanghai(exportedAt)}.pdf`;
 }
+
+export function buildDecisionArchivePdfFilename(assetName: string) {
+  const safeAsset = assetName.trim().replace(/[<>:"/\\|?*\u0000-\u001F]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || '未命名标的';
+  return `${safeAsset}-投资决策档案.pdf`;
+}

@@ -129,3 +129,29 @@ export async function renderDecisionPdf(report: DecisionReport): Promise<Buffer>
     doc.end();
   });
 }
+
+export async function renderDecisionArchivePdf(reports: DecisionReport[]): Promise<Buffer> {
+  return new Promise((resolveBuffer, reject) => {
+    const doc = new PDFDocument({ size: 'A4', margins: { top: 54, right: 54, bottom: 58, left: 54 }, bufferPages: true, info: { Title: `${reports[0]?.meta.assetName ?? ''} - 投资决策档案`, Author: '人生工作台' } });
+    const chunks: Buffer[] = []; doc.on('data', (chunk: Buffer) => chunks.push(chunk)); doc.on('error', reject); doc.on('end', () => resolveBuffer(Buffer.concat(chunks)));
+    doc.registerFont('NotoSansSC', fontPath).font('NotoSansSC');
+    const assetName = reports[0]?.meta.assetName ?? '投资决策';
+    doc.fillColor(colors.accent).fontSize(13).text('人生工作台 · 决策档案', { align: 'center' });
+    doc.moveDown(4).fillColor(colors.ink).fontSize(28).text(assetName, { align: 'center' });
+    doc.moveDown(0.7).fontSize(18).text('历次投资决策', { align: 'center' });
+    doc.moveDown(4).fillColor(colors.muted).fontSize(10).text(`共 ${reports.length} 次已定稿决策`, { align: 'center' });
+    doc.addPage(); drawHeading(doc, '目录');
+    reports.forEach((report, index) => drawFields(doc, [{ label: `${index + 1}. ${formatDate(report.meta.decisionDate)} · ${report.meta.decisionLabel}`, value: report.conclusion.find((item) => item.label === '核心理由')?.value ?? '' }]));
+    reports.forEach((report, index) => {
+      doc.addPage(); drawHeading(doc, `${index + 1}. ${formatDate(report.meta.decisionDate)} · ${report.meta.decisionLabel}`);
+      drawFields(doc, report.conclusion); drawHeading(doc, '判断与估值'); drawFields(doc, report.judgment);
+      if (hasPrintableFields(report.execution)) { drawHeading(doc, '执行计划'); drawFields(doc, report.execution); }
+      drawHeading(doc, '错误预案'); drawFields(doc, report.errorPlan);
+      if (report.doNotList.length) { doc.fillColor(colors.ink).fontSize(11).text('不做清单'); doc.moveDown(0.3); drawList(doc, report.doNotList); }
+      drawHeading(doc, `当时的研究快照 · 第 ${report.meta.snapshotVersion} 版`); drawFields(doc, report.researchSummary); drawFields(doc, report.researchSections);
+      if (report.hypotheses.length) { drawHeading(doc, '当时的研究假设'); report.hypotheses.forEach((item, hypothesisIndex) => drawHypothesis(doc, hypothesisIndex, item)); }
+    });
+    const range = doc.bufferedPageRange(); for (let index = 0; index < range.count; index += 1) { doc.switchToPage(range.start + index); drawFooter(doc, assetName, index + 1, range.count); }
+    doc.end();
+  });
+}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { InvestmentDecision, ResearchSnapshot } from '@/types/life-os';
-import { buildDecisionPdfFilename, buildDecisionReport } from './decision-report';
+import { buildDecisionArchivePdfFilename, buildDecisionPdfFilename, buildDecisionReport } from './decision-report';
 
 const decision: InvestmentDecision = {
   id: 'decision-1', user_id: 'user-1', research_profile_id: 'profile-1', research_snapshot_id: 'snapshot-1',
@@ -33,6 +33,9 @@ const snapshot: ResearchSnapshot = {
 };
 
 describe('decision report', () => {
+  it('creates a stable archive filename', () => {
+    expect(buildDecisionArchivePdfFilename('腾讯/控股')).toBe('腾讯-控股-投资决策档案.pdf');
+  });
   it('uses the finalized decision and its stored snapshot rather than current research', () => {
     const report = buildDecisionReport({ decision, snapshot, exportedAt: '2026-10-02T02:00:00Z' });
     expect(report.meta).toMatchObject({ assetName: '腾讯/控股', decisionLabel: '买入', snapshotVersion: 3 });

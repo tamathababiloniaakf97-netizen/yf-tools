@@ -3,7 +3,7 @@ import { dirname, resolve } from 'node:path';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { DecisionReport } from './decision-report';
-import { hasPrintableFields, renderDecisionPdf } from './decision-pdf';
+import { hasPrintableFields, renderDecisionArchivePdf, renderDecisionPdf } from './decision-pdf';
 
 const report: DecisionReport = {
   meta: {
@@ -62,6 +62,12 @@ describe('decision PDF renderer', () => {
     const pageCount = pdf.toString('latin1').match(/\/Type \/Page\b/g)?.length ?? 0;
     expect(pageCount).toBeGreaterThan(1);
     expect(pageCount).toBeLessThan(10);
+  });
+
+  it('renders multiple chronological decisions as one archive PDF', async () => {
+    const pdf = await renderDecisionArchivePdf([report, { ...report, meta: { ...report.meta, decisionLabel: '加仓', decisionDate: '2026-11-01' } }]);
+    expect(pdf.subarray(0, 5).toString('ascii')).toBe('%PDF-');
+    expect(pdf.toString('latin1').match(/\/Type \/Page\b/g)?.length ?? 0).toBeGreaterThan(2);
   });
 
   it('writes the representative fixture only when explicitly requested', async () => {
