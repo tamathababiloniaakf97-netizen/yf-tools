@@ -25,7 +25,7 @@ const report: ResearchReport = {
   ],
   checklist: [{ label: 'pricing power', statusLabel: '需要验证', note: '跟踪下一次续费价格' }],
   hypotheses: [
-    { id: 'h1', statement: '企业客户续费率保持稳定', keyVariables: '净收入留存率', statusLabel: '未验证', nextCheckAt: '2026-11-01' },
+    { id: 'h1', statement: '企业客户续费率保持稳定', keyVariables: '净收入留存率', statusLabel: '待验证', nextCheckAt: '2026-11-01' },
     { id: 'h2', statement: '新产品能提高客单价', keyVariables: '交叉销售率', statusLabel: '受到挑战', nextCheckAt: null },
   ],
   evidence: Array.from({ length: 12 }, (_, index) => ({

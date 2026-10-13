@@ -29,7 +29,7 @@ const coreFields: Array<[keyof ResearchProfile, string]> = [
 ];
 
 const hypothesisLabels: Record<ResearchHypothesis['status'], string> = {
-  unverified: '未验证', supported: '支持', challenged: '受到挑战', inconclusive: '结论不明确',
+  unverified: '待验证', supported: '暂时支持', challenged: '受到挑战', not_applicable: '不适用',
 };
 const impactLabels: Record<EvidenceRecord['impact'], string> = {
   support: '支持', challenge: '挑战', mixed: '混合', neutral: '中性',
@@ -87,7 +87,7 @@ export function buildResearchReport({ profile, hypotheses, evidence, materials =
     currentResearchCitations,
     gaps: {
       missingCoreFields,
-      unresolvedHypothesisCount: hypotheses.filter((item) => item.status === 'unverified' || item.status === 'inconclusive' || item.status === 'challenged').length,
+      unresolvedHypothesisCount: hypotheses.filter((item) => item.status === 'unverified' || item.status === 'challenged').length,
       evidenceWithoutSourceCount: evidence.filter((item) => !item.source_name.trim() && !item.source_url?.trim()).length,
     },
   };

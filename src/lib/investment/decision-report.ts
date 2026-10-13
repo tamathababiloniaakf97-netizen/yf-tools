@@ -5,7 +5,7 @@ const decisionLabels: Record<InvestmentDecisionType, string> = {
 };
 
 const hypothesisLabels: Record<ResearchHypothesisStatus, string> = {
-  unverified: '未验证', supported: '获得支持', challenged: '受到挑战', inconclusive: '暂无结论',
+  unverified: '待验证', supported: '暂时支持', challenged: '受到挑战', not_applicable: '不适用',
 };
 
 export type DecisionReportField = { label: string; value: string };

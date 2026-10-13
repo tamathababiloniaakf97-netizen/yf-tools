@@ -43,7 +43,7 @@ const report: DecisionReport = {
   hypotheses: Array.from({ length: 8 }, (_, index) => ({
     statement: `研究假设 ${index + 1}：核心业务保持竞争力并形成可验证结果。`,
     keyVariables: '收入增速、市场份额、自由现金流',
-    statusLabel: index % 2 ? '获得支持' : '未验证',
+    statusLabel: index % 2 ? '暂时支持' : '待验证',
     nextCheckAt: index % 2 ? null : '2026-11-15',
   })),
 };

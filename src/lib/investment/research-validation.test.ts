@@ -30,6 +30,8 @@ describe('research validation', () => {
 
   it('normalizes hypotheses and rejects unsupported states', () => {
     expect(normalizeHypothesisInput({ statement: ' 广告收入保持增长 ', key_variables: ' 广告加载率 ' })).toMatchObject({ ok: true, value: { statement: '广告收入保持增长', key_variables: '广告加载率', status: 'unverified' } });
+    expect(normalizeHypothesisInput({ statement: '不适用于当前公司', status: 'not_applicable' })).toMatchObject({ ok: true, value: { status: 'not_applicable' } });
+    expect(normalizeHypothesisInput({ statement: '假设', status: 'inconclusive' as 'unverified' }).ok).toBe(false);
     expect(normalizeHypothesisInput({ statement: '假设', status: 'bad' as 'unverified' }).ok).toBe(false);
   });
 });

@@ -41,7 +41,7 @@ describe('decision report', () => {
       { label: '核心理由', value: '赔率和长期质量匹配' },
     ]);
     expect(report.researchSummary).toContainEqual({ label: '当时的投资逻辑', value: '长期现金流质量较高' });
-    expect(report.hypotheses[0]).toMatchObject({ statement: '广告份额继续提升', statusLabel: '未验证' });
+    expect(report.hypotheses[0]).toMatchObject({ statement: '广告份额继续提升', statusLabel: '待验证' });
   });
 
   it('builds a safe filename from the decision date and falls back to export date', () => {
