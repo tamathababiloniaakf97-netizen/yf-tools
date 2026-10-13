@@ -2,7 +2,7 @@ import { resolve } from 'node:path';
 import PDFDocument from 'pdfkit';
 import type { ResearchReport } from './research-report';
 
-const colors = { ink: '#172033', muted: '#667085', line: '#D9DEE8', panel: '#F5F7FA', accent: '#315EFB', warning: '#9A6700' };
+const colors = { ink: '#111827', muted: '#344054', line: '#CBD5E1', panel: '#F5F7FA', accent: '#1D4ED8', warning: '#854D0E' };
 const fontPath = resolve(process.cwd(), 'src/assets/fonts/NotoSansSC-Variable.ttf');
 
 export type VisibleResearchReportSection = 'summary' | 'research' | 'citations' | 'checklist' | 'hypotheses' | 'evidence';
@@ -31,7 +31,7 @@ function ensureSpace(doc: PDFKit.PDFDocument, height: number) {
 
 function drawSectionHeading(doc: PDFKit.PDFDocument, title: string) {
   ensureSpace(doc, 58);
-  doc.moveDown(0.7).fillColor(colors.accent).fontSize(15).text(title, { continued: false });
+  doc.moveDown(0.7).fillColor(colors.accent).fontSize(17).text(title, { continued: false });
   doc.moveDown(0.25).strokeColor(colors.line).lineWidth(1).moveTo(doc.page.margins.left, doc.y).lineTo(doc.page.width - doc.page.margins.right, doc.y).stroke();
   doc.moveDown(0.65);
 }
@@ -39,30 +39,30 @@ function drawSectionHeading(doc: PDFKit.PDFDocument, title: string) {
 function drawLabeledText(doc: PDFKit.PDFDocument, label: string, value: string) {
   if (!value.trim()) return;
   ensureSpace(doc, 76);
-  doc.fillColor(colors.ink).fontSize(11).text(label);
-  doc.moveDown(0.22).fillColor(colors.muted).fontSize(9.5).text(value, { lineGap: 4 });
+  doc.fillColor(colors.ink).fontSize(12).text(label);
+  doc.moveDown(0.22).fillColor(colors.muted).fontSize(11).text(value, { lineGap: 5 });
   doc.moveDown(0.72);
 }
 
 function drawRecordCard(doc: PDFKit.PDFDocument, title: string, lines: Array<{ label: string; value: string }>) {
   const usefulLines = lines.filter((line) => line.value.trim());
   const text = usefulLines.map((line) => `${line.label}：${line.value}`).join('\n');
-  const titleHeight = doc.heightOfString(title, { width: 455, lineGap: 2 });
-  const bodyHeight = doc.fontSize(9).heightOfString(text, { width: 455, lineGap: 3 });
+  const titleHeight = doc.fontSize(11.5).heightOfString(title, { width: 455, lineGap: 3 });
+  const bodyHeight = doc.fontSize(10.5).heightOfString(text, { width: 455, lineGap: 4 });
   const height = Math.max(58, titleHeight + bodyHeight + 30);
   const availablePageHeight = doc.page.height - doc.page.margins.top - doc.page.margins.bottom - 48;
   if (height > availablePageHeight) {
     ensureSpace(doc, 90);
-    doc.fillColor(colors.ink).fontSize(10.5).text(title, { width: 455, lineGap: 2 });
-    doc.moveDown(0.3).fillColor(colors.muted).fontSize(9).text(text || '暂无补充信息', { width: 455, lineGap: 3 });
+    doc.fillColor(colors.ink).fontSize(11.5).text(title, { width: 455, lineGap: 3 });
+    doc.moveDown(0.3).fillColor(colors.muted).fontSize(10.5).text(text || '暂无补充信息', { width: 455, lineGap: 4 });
     doc.moveDown(0.8);
     return;
   }
   ensureSpace(doc, height);
   const top = doc.y;
   doc.save().roundedRect(doc.page.margins.left, top, doc.page.width - doc.page.margins.left - doc.page.margins.right, height, 6).fill(colors.panel).restore();
-  doc.fillColor(colors.ink).fontSize(10.5).text(title, doc.page.margins.left + 12, top + 10, { width: 455, lineGap: 2 });
-  doc.moveDown(0.3).fillColor(colors.muted).fontSize(9).text(text || '暂无补充信息', { width: 455, lineGap: 3 });
+  doc.fillColor(colors.ink).fontSize(11.5).text(title, doc.page.margins.left + 12, top + 10, { width: 455, lineGap: 3 });
+  doc.moveDown(0.3).fillColor(colors.muted).fontSize(10.5).text(text || '暂无补充信息', { width: 455, lineGap: 4 });
   doc.y = top + height + 9;
 }
 
@@ -79,17 +79,17 @@ function drawEvidenceCard(doc: PDFKit.PDFDocument, index: number, item: Research
     `来源：${item.sourceName || (item.sourceUrl ? '原文链接' : '来源未记录')}`,
   ].filter(Boolean).join('\n');
   const linkText = item.sourceUrl ? truncateDisplayUrl(item.sourceUrl) : '';
-  doc.fontSize(10.5);
+  doc.fontSize(11.5);
   const titleHeight = doc.heightOfString(title, { width: 455, lineGap: 2 });
-  doc.fontSize(9);
-  const detailsHeight = doc.heightOfString(details, { width: 455, lineGap: 3 });
+  doc.fontSize(10.5);
+  const detailsHeight = doc.heightOfString(details, { width: 455, lineGap: 4 });
   const linkHeight = linkText ? doc.heightOfString(linkText, { width: 455, lineGap: 2 }) + 5 : 0;
   const height = titleHeight + detailsHeight + linkHeight + 30;
   const availablePageHeight = doc.page.height - doc.page.margins.top - doc.page.margins.bottom - 48;
   if (height > availablePageHeight) {
     ensureSpace(doc, 100);
-    doc.fillColor(colors.ink).fontSize(10.5).text(title, { width: 455, lineGap: 2 });
-    doc.moveDown(0.3).fillColor(colors.muted).fontSize(9).text(details, { width: 455, lineGap: 3 });
+    doc.fillColor(colors.ink).fontSize(11.5).text(title, { width: 455, lineGap: 3 });
+    doc.moveDown(0.3).fillColor(colors.muted).fontSize(10.5).text(details, { width: 455, lineGap: 4 });
     if (item.sourceUrl) doc.fillColor(colors.accent).fontSize(8.5).text(linkText, { link: item.sourceUrl, underline: true, width: 455 });
     doc.moveDown(0.8);
     return;
@@ -98,8 +98,8 @@ function drawEvidenceCard(doc: PDFKit.PDFDocument, index: number, item: Research
   const top = doc.y;
   const left = doc.page.margins.left + 12;
   doc.save().roundedRect(doc.page.margins.left, top, doc.page.width - doc.page.margins.left - doc.page.margins.right, height, 6).fill(colors.panel).restore();
-  doc.fillColor(colors.ink).fontSize(10.5).text(title, left, top + 10, { width: 455, lineGap: 2 });
-  doc.moveDown(0.3).fillColor(colors.muted).fontSize(9).text(details, { width: 455, lineGap: 3 });
+  doc.fillColor(colors.ink).fontSize(11.5).text(title, left, top + 10, { width: 455, lineGap: 3 });
+  doc.moveDown(0.3).fillColor(colors.muted).fontSize(10.5).text(details, { width: 455, lineGap: 4 });
   if (item.sourceUrl) doc.moveDown(0.25).fillColor(colors.accent).fontSize(8.5).text(linkText, { link: item.sourceUrl, underline: true, width: 455 });
   doc.y = top + height + 9;
 }
