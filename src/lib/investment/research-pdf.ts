@@ -7,6 +7,19 @@ const fontPath = resolve(process.cwd(), 'src/assets/fonts/NotoSansSC-Variable.tt
 
 export type VisibleResearchReportSection = 'summary' | 'research' | 'citations' | 'checklist' | 'hypotheses' | 'evidence';
 
+const researchSectionTitles: Record<string, string> = {
+  业务模式: '生意本质｜公司靠什么生意挣钱？',
+  客户价值: '生意本质｜为什么客户愿意持续付钱？',
+  竞争优势: '持续竞争力｜竞争优势来自哪里，靠什么持续？',
+  长期关键假设: '关键假设｜五年后继续挣钱依赖哪些关键假设？',
+  判断失效条件: '失效条件｜什么事实出现会证明判断错误？',
+  盈利质量: '经济质量｜挣到的钱质量如何？',
+};
+
+export function formatResearchSectionTitle(label: string) {
+  return researchSectionTitles[label] ?? label;
+}
+
 export function formatHypothesisTitle(index: number, statement: string) {
   return `假设 ${index + 1}｜${statement}`;
 }
@@ -154,12 +167,12 @@ export async function renderResearchPdf(report: ResearchReport): Promise<Buffer>
     const visibleSections = new Set(getVisibleResearchReportSections(report));
     if (visibleSections.has('summary')) {
       drawSectionHeading(doc, '核心摘要');
-      report.summary.forEach((item) => drawLabeledText(doc, item.label, item.value));
+      report.summary.forEach((item) => drawLabeledText(doc, formatResearchSectionTitle(item.label), item.value));
     }
 
     if (visibleSections.has('research')) {
       drawSectionHeading(doc, '公司研究');
-      report.sections.forEach((item) => drawLabeledText(doc, item.label, item.value));
+      report.sections.forEach((item) => drawLabeledText(doc, formatResearchSectionTitle(item.label), item.value));
     }
 
     if (visibleSections.has('citations')) {

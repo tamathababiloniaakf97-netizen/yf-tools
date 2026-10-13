@@ -6,6 +6,7 @@ import type { ResearchReport } from './research-report';
 import {
   buildInformationGapLines,
   formatHypothesisTitle,
+  formatResearchSectionTitle,
   getVisibleResearchReportSections,
   renderResearchPdf,
 } from './research-pdf';
@@ -51,6 +52,12 @@ const report: ResearchReport = {
 };
 
 describe('research PDF renderer', () => {
+  it('uses the editor category and question for core research headings', () => {
+    expect(formatResearchSectionTitle('业务模式')).toBe('生意本质｜公司靠什么生意挣钱？');
+    expect(formatResearchSectionTitle('竞争优势')).toBe('持续竞争力｜竞争优势来自哪里，靠什么持续？');
+    expect(formatResearchSectionTitle('管理层与文化')).toBe('管理层与文化');
+  });
+
   it('numbers hypotheses using their current PDF order', () => {
     expect(formatHypothesisTitle(0, '护城河仍需验证')).toBe('假设 1｜护城河仍需验证');
     expect(formatHypothesisTitle(9, '需求持续增长')).toBe('假设 10｜需求持续增长');
