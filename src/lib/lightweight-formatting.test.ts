@@ -51,6 +51,15 @@ describe('parseLightweightText', () => {
       ] },
     ]);
   });
+
+  it('parses emphasis nested inside bold when surrounding punctuation is not emphasized', () => {
+    expect(parseLightweightText('**==但是在积极的人眼里会是商机，会是解决方案==。**')).toEqual([
+      { type: 'paragraph', lines: [[
+        { type: 'boldEmphasis', value: '但是在积极的人眼里会是商机，会是解决方案' },
+        { type: 'bold', value: '。' },
+      ]] },
+    ]);
+  });
 });
 
 describe('format transforms', () => {

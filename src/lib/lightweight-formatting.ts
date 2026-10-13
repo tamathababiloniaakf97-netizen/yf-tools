@@ -11,6 +11,21 @@ export interface FormattingTransform {
   selectionEnd: number;
 }
 
+function appendNestedTokens(tokens: InlineToken[], value: string, outer: 'bold' | 'emphasis') {
+  const pattern = outer === 'bold' ? /==([^=\n]+)==/g : /\*\*([^*\n]+)\*\*/g;
+  let cursor = 0;
+  let found = false;
+  for (const match of value.matchAll(pattern)) {
+    found = true;
+    const index = match.index ?? 0;
+    if (index > cursor) tokens.push({ type: outer, value: value.slice(cursor, index) });
+    tokens.push({ type: 'boldEmphasis', value: match[1] });
+    cursor = index + match[0].length;
+  }
+  if (!found) tokens.push({ type: outer, value });
+  else if (cursor < value.length) tokens.push({ type: outer, value: value.slice(cursor) });
+}
+
 function parseInline(value: string): InlineToken[] {
   const tokens: InlineToken[] = [];
   const pattern = /(\*\*==([^=\n]+)==\*\*|==\*\*([^*\n]+)\*\*==|\*\*([^*\n]+)\*\*|==([^=\n]+)==)/g;
@@ -19,8 +34,8 @@ function parseInline(value: string): InlineToken[] {
     const index = match.index ?? 0;
     if (index > cursor) tokens.push({ type: 'text', value: value.slice(cursor, index) });
     if (match[2] || match[3]) tokens.push({ type: 'boldEmphasis', value: match[2] ?? match[3] });
-    else if (match[4]) tokens.push({ type: 'bold', value: match[4] });
-    else tokens.push({ type: 'emphasis', value: match[5] });
+    else if (match[4]) appendNestedTokens(tokens, match[4], 'bold');
+    else appendNestedTokens(tokens, match[5], 'emphasis');
     cursor = index + match[0].length;
   }
   if (cursor < value.length || tokens.length === 0) tokens.push({ type: 'text', value: value.slice(cursor) });

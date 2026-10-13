@@ -25,4 +25,11 @@ describe('LightweightFormattedText', () => {
     expect(text.tagName).toBe('STRONG');
     expect(text).toHaveClass('lightweight-formatted-emphasis');
   });
+
+  it('keeps punctuation bold without leaking nested emphasis markers', () => {
+    const { container } = render(<LightweightFormattedText value="**==积极判断==。**" />);
+    expect(screen.getByText('积极判断')).toHaveClass('lightweight-formatted-emphasis');
+    expect(container).toHaveTextContent('积极判断。');
+    expect(container).not.toHaveTextContent('==');
+  });
 });
