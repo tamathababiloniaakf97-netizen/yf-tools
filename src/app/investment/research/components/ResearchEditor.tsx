@@ -10,7 +10,7 @@ import CompanyIndustrySection from './CompanyIndustrySection';
 const coreFields: Array<{ name: keyof ResearchProfileInput; title: string; section: string; guidance: string; financialEvidence?: string }> = [
   { name: 'business_model', title: '公司靠什么生意挣钱？', section: '生意本质', guidance: '写清主要客户、交付的价值和收入来源；不必复述公司历史或产品清单。', financialEvidence: '必要时确认主要收入和利润来源。' },
   { name: 'customer_value', title: '为什么客户愿意持续付钱？', section: '生意本质', guidance: '写客户真正购买的结果及需求持续的原因；避免只写“体验好”。' },
-  { name: 'competitive_advantage', title: '为什么竞争者难以抢走？', section: '持续竞争力', guidance: '写最关键且可验证的优势及其持续机制；不罗列泛泛的公司优点。' },
+  { name: 'competitive_advantage', title: '竞争优势来自哪里，靠什么持续？', section: '持续竞争力', guidance: '写最关键且可验证的优势及其持续机制；不罗列泛泛的公司优点。' },
   { name: 'long_term_assumptions', title: '五年后继续挣钱依赖哪些关键假设？', section: '关键假设', guidance: '写必须持续成立的外部条件和内部能力；不确定时直接写待验证事项。' },
   { name: 'invalidation_conditions', title: '什么事实出现会证明判断错误？', section: '失效条件', guidance: '写可观察、可证伪的反证；例：核心产品连续两个季度量价齐跌。', financialEvidence: '尽量加入可通过财务数据验证的反证条件。' },
   { name: 'earnings_quality', title: '挣到的钱质量如何？', section: '经济质量', guidance: '写利润能否转化为现金、维持增长需要多少投入及资本回报的持续性。', financialEvidence: '该判断应有财务数据支持，避免只有主观结论。' },
