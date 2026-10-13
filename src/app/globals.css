@@ -387,3 +387,42 @@ body.is-resizing-split{cursor:col-resize;user-select:none}
 .investment-motto-seal { align-items: center; background: #fbfaf7; border: 1px solid #b8bec8; border-radius: 4px; color: #566171; display: inline-flex; font-family: KaiTi, STKaiti, SimSun, serif; font-size: 18px; height: 30px; justify-content: center; line-height: 1; width: 30px; }
 @media (max-width: 900px) { .market-cycle-summary-grid, .cycle-indicator-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 560px) { .market-cycle-summary-grid, .cycle-indicator-grid { grid-template-columns: 1fr; } .cycle-price-anchor-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .investment-overview-title-row { align-items: flex-start; flex-direction: column; gap: 8px; } }
+.lightweight-editor-toolbar {
+  margin-bottom: 8px;
+}
+
+.lightweight-editor-toolbar .ant-btn {
+  color: var(--color-text-secondary, #666);
+}
+
+.lightweight-formatted-text {
+  line-height: 1.85;
+  overflow-wrap: anywhere;
+}
+
+.lightweight-formatted-text p {
+  margin: 0 0 1em;
+}
+
+.lightweight-formatted-heading {
+  font-size: 1.05rem;
+  line-height: 1.5;
+  margin: 1.35em 0 0.55em;
+}
+
+.lightweight-formatted-list {
+  margin: 0 0 1em;
+  padding-left: 1.5em;
+}
+
+.lightweight-formatted-quote {
+  border-left: 3px solid #d9d9d9;
+  color: #5f6670;
+  margin: 0 0 1em;
+  padding: 0.25em 0 0.25em 1em;
+}
+
+.lightweight-formatted-emphasis {
+  color: #c2410c;
+  font-weight: 600;
+}
