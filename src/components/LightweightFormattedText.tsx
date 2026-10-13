@@ -9,6 +9,7 @@ interface LightweightFormattedTextProps {
 function renderInline(tokens: InlineToken[], keyPrefix: string): ReactNode[] {
   return tokens.map((token, index) => {
     const key = `${keyPrefix}-${index}`;
+    if (token.type === 'boldEmphasis') return <strong className="lightweight-formatted-emphasis" key={key}>{token.value}</strong>;
     if (token.type === 'bold') return <strong key={key}>{token.value}</strong>;
     if (token.type === 'emphasis') return <span className="lightweight-formatted-emphasis" key={key}>{token.value}</span>;
     return <Fragment key={key}>{token.value}</Fragment>;

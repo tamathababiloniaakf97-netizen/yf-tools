@@ -1,4 +1,4 @@
-export type InlineToken = { type: 'text' | 'bold' | 'emphasis'; value: string };
+export type InlineToken = { type: 'text' | 'bold' | 'emphasis' | 'boldEmphasis'; value: string };
 
 export type FormattingBlock =
   | { type: 'heading'; content: InlineToken[] }
@@ -13,14 +13,14 @@ export interface FormattingTransform {
 
 function parseInline(value: string): InlineToken[] {
   const tokens: InlineToken[] = [];
-  const pattern = /(\*\*([^*\n]+)\*\*|==([^=\n]+)==)/g;
+  const pattern = /(\*\*==([^=\n]+)==\*\*|==\*\*([^*\n]+)\*\*==|\*\*([^*\n]+)\*\*|==([^=\n]+)==)/g;
   let cursor = 0;
   for (const match of value.matchAll(pattern)) {
     const index = match.index ?? 0;
     if (index > cursor) tokens.push({ type: 'text', value: value.slice(cursor, index) });
-    tokens.push(match[2]
-      ? { type: 'bold', value: match[2] }
-      : { type: 'emphasis', value: match[3] });
+    if (match[2] || match[3]) tokens.push({ type: 'boldEmphasis', value: match[2] ?? match[3] });
+    else if (match[4]) tokens.push({ type: 'bold', value: match[4] });
+    else tokens.push({ type: 'emphasis', value: match[5] });
     cursor = index + match[0].length;
   }
   if (cursor < value.length || tokens.length === 0) tokens.push({ type: 'text', value: value.slice(cursor) });

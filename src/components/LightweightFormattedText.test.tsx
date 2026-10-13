@@ -18,4 +18,11 @@ describe('LightweightFormattedText', () => {
     expect(screen.getByText('<script>alert(1)</script>')).toBeInTheDocument();
     expect(container.querySelector('script')).toBeNull();
   });
+
+  it('renders combined bold emphasis with both weight and color', () => {
+    render(<LightweightFormattedText value="**==重要结论==**" />);
+    const text = screen.getByText('重要结论');
+    expect(text.tagName).toBe('STRONG');
+    expect(text).toHaveClass('lightweight-formatted-emphasis');
+  });
 });

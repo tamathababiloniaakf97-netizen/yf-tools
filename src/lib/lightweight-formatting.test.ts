@@ -42,6 +42,15 @@ describe('parseLightweightText', () => {
       ] },
     ]);
   });
+
+  it('preserves emphasis color when bold and emphasis are combined in either order', () => {
+    expect(parseLightweightText('**==重点判断==**\n==**另一条判断**==')).toEqual([
+      { type: 'paragraph', lines: [
+        [{ type: 'boldEmphasis', value: '重点判断' }],
+        [{ type: 'boldEmphasis', value: '另一条判断' }],
+      ] },
+    ]);
+  });
 });
 
 describe('format transforms', () => {
