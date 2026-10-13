@@ -16,7 +16,7 @@ export interface ResearchReport {
   hypotheses: Array<{ id: string; statement: string; keyVariables: string; statusLabel: string; nextCheckAt: string | null }>;
   evidence: Array<{ content: string; impactLabel: string; sourceName: string; sourceUrl: string | null; occurredAt: string | null; hypothesisStatement: string | null }>;
   currentResearchCitations: Array<{ fieldLabel: string; items: Array<{ title: string; excerpt: string; impactLabel: string; sourceName: string; sourceDate: string | null; personalNote: string }> }>;
-  gaps: { missingCoreFields: string[]; unresolvedHypothesisCount: number; evidenceWithoutSourceCount: number };
+  gaps: { explicitUnknowns: string; missingCoreFields: string[]; hypothesesWithoutEvidence: string[]; evidenceWithoutSource: string[] };
 }
 
 const coreFields: Array<[keyof ResearchProfile, string]> = [
@@ -25,7 +25,7 @@ const coreFields: Array<[keyof ResearchProfile, string]> = [
   ['competitive_advantage', '竞争优势'],
   ['long_term_assumptions', '长期关键假设'],
   ['invalidation_conditions', '判断失效条件'],
-  ['earnings_quality', '盈利质量'],
+  ['earnings_quality', '经济质量'],
 ];
 
 const hypothesisLabels: Record<ResearchHypothesis['status'], string> = {
@@ -50,6 +50,7 @@ export function buildResearchReport({ profile, hypotheses, evidence, materials =
   const missingCoreFields = coreFields.filter(([key]) => !valueOf(profile, key)).map(([, label]) => label);
   const hypothesisById = new Map(hypotheses.map((item) => [item.id, item.statement]));
   const materialById = new Map(materials.map((item) => [item.id, item]));
+  const hypothesisIdsWithEvidence = new Set(evidence.map((item) => item.hypothesis_id).filter((id): id is string => Boolean(id)));
   const orderedEvidence = evidence.map((item, index) => ({ item, index })).sort((left, right) => {
     const leftTime = Date.parse(left.item.occurred_at || left.item.created_at) || 0;
     const rightTime = Date.parse(right.item.occurred_at || right.item.created_at) || 0;
@@ -86,9 +87,14 @@ export function buildResearchReport({ profile, hypotheses, evidence, materials =
     })),
     currentResearchCitations,
     gaps: {
+      explicitUnknowns: valueOf(profile, 'unknowns'),
       missingCoreFields,
-      unresolvedHypothesisCount: hypotheses.filter((item) => item.status === 'unverified' || item.status === 'challenged').length,
-      evidenceWithoutSourceCount: evidence.filter((item) => !item.source_name.trim() && !item.source_url?.trim()).length,
+      hypothesesWithoutEvidence: hypotheses.filter((item) => item.status !== 'not_applicable' && !hypothesisIdsWithEvidence.has(item.id)).map((item) => item.statement),
+      evidenceWithoutSource: evidence.filter((item) => {
+        if (item.source_name.trim() || item.source_url?.trim()) return false;
+        const material = item.material_id ? materialById.get(item.material_id) : null;
+        return !material?.source_name?.trim() && !material?.source_url?.trim();
+      }).map((item) => item.content),
     },
   };
 }

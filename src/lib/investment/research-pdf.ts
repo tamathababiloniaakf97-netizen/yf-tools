@@ -7,6 +7,16 @@ const fontPath = resolve(process.cwd(), 'src/assets/fonts/NotoSansSC-Variable.tt
 
 export type VisibleResearchReportSection = 'summary' | 'research' | 'citations' | 'checklist' | 'hypotheses' | 'evidence';
 
+export function buildInformationGapLines(gaps: ResearchReport['gaps']) {
+  const lines = [
+    gaps.explicitUnknowns ? `仍待确认：${gaps.explicitUnknowns}` : '',
+    gaps.hypothesesWithoutEvidence.length ? `关键假设尚无关联证据：${gaps.hypothesesWithoutEvidence.join('；')}` : '',
+    gaps.evidenceWithoutSource.length ? `无法追溯来源的证据：${gaps.evidenceWithoutSource.join('；')}` : '',
+    gaps.missingCoreFields.length ? `尚未形成判断：${gaps.missingCoreFields.join('、')}` : '',
+  ].filter(Boolean);
+  return lines.length ? lines : ['当前记录中没有明确的信息缺口，但这不代表研究已经充分。'];
+}
+
 export function getVisibleResearchReportSections(report: ResearchReport): VisibleResearchReportSection[] {
   const sections: VisibleResearchReportSection[] = [];
   if (report.summary.length) sections.push('summary');
@@ -175,14 +185,10 @@ export async function renderResearchPdf(report: ResearchReport): Promise<Buffer>
       report.evidence.forEach((item, index) => drawEvidenceCard(doc, index, item));
     }
 
-    drawSectionHeading(doc, '资料缺口');
-    const gapLines = [
-      report.gaps.missingCoreFields.length ? `未填写的核心字段：${report.gaps.missingCoreFields.join('、')}` : '核心研究字段已填写',
-      `未解决或受到挑战的假设：${report.gaps.unresolvedHypothesisCount} 条`,
-      `来源未记录的证据：${report.gaps.evidenceWithoutSourceCount} 条`,
-    ];
+    drawSectionHeading(doc, '信息缺口');
+    const gapLines = buildInformationGapLines(report.gaps);
     gapLines.forEach((line) => { doc.fillColor(colors.muted).fontSize(10).text(`• ${line}`, { lineGap: 4 }); doc.moveDown(0.35); });
-    doc.moveDown(0.8).fontSize(8.5).text('以上仅反映记录完整性，不代表研究质量，也不构成买卖建议。');
+    doc.moveDown(0.8).fontSize(8.5).text('以上仅反映当前记录中可识别的信息缺口，不代表研究已经充分，也不构成买卖建议。');
 
     const range = doc.bufferedPageRange();
     for (let index = 0; index < range.count; index += 1) {

@@ -48,6 +48,7 @@ describe('company research report', () => {
       fieldLabel: '客户价值', items: [{ title: '客户续约率保持稳定', excerpt: '续约率连续三个季度稳定', impactLabel: '支持', sourceName: '2026年中报', sourceDate: '2026-09-28', personalNote: '仍需观察提价后的流失情况' }],
     }]);
     expect(report.evidence.map((item) => item.content)).toEqual(['普通公司证据']);
+    expect(report.gaps.evidenceWithoutSource).toEqual([]);
   });
 
   it('normalizes labels, hypotheses, evidence order and completeness gaps', () => {
@@ -66,7 +67,12 @@ describe('company research report', () => {
     expect(report.hypotheses[0].statusLabel).toBe('受到挑战');
     expect(report.evidence.map((item) => item.content)).toEqual(['最新证据', '较早证据', '无日期证据']);
     expect(report.evidence[0]).toMatchObject({ hypothesisStatement: '广告业务恢复增长', impactLabel: '挑战' });
-    expect(report.gaps).toEqual({ missingCoreFields: ['盈利质量'], unresolvedHypothesisCount: 1, evidenceWithoutSourceCount: 1 });
+    expect(report.gaps).toEqual({
+      explicitUnknowns: '视频号商业化上限',
+      missingCoreFields: ['经济质量'],
+      hypothesesWithoutEvidence: ['现金流保持稳定'],
+      evidenceWithoutSource: ['无日期证据'],
+    });
     expect(report.checklist).toEqual([{ label: 'pricing power', statusLabel: '已考虑', note: '广告加载率仍有空间' }]);
   });
 

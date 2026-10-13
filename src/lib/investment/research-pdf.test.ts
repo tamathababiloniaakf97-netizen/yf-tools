@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { ResearchReport } from './research-report';
-import { getVisibleResearchReportSections, renderResearchPdf } from './research-pdf';
+import { buildInformationGapLines, getVisibleResearchReportSections, renderResearchPdf } from './research-pdf';
 
 const longEvidence = '公司在最新季度披露的经营数据出现变化，需要结合管理层说明和后续两个季度的数据继续验证。'.repeat(8);
 
@@ -37,7 +37,12 @@ const report: ResearchReport = {
     hypothesisStatement: index % 2 ? '企业客户续费率保持稳定' : '新产品能提高客单价',
   })),
   currentResearchCitations: [{ fieldLabel: '客户价值', items: [{ title: '客户续约率保持稳定', excerpt: '续约率连续三个季度稳定。', impactLabel: '支持', sourceName: '季度报告', sourceDate: '2026-09-28', personalNote: '继续观察提价后的流失率。' }] }],
-  gaps: { missingCoreFields: ['盈利质量'], unresolvedHypothesisCount: 2, evidenceWithoutSourceCount: 1 },
+  gaps: {
+    explicitUnknowns: '海外市场的真实获客成本。',
+    missingCoreFields: ['经济质量'],
+    hypothesesWithoutEvidence: ['企业客户续费率保持稳定'],
+    evidenceWithoutSource: ['公司披露口径发生变化'],
+  },
 };
 
 describe('research PDF renderer', () => {
@@ -57,6 +62,17 @@ describe('research PDF renderer', () => {
     const pageCount = pdf.toString('latin1').match(/\/Type \/Page\b/g)?.length ?? 0;
     expect(pageCount).toBeGreaterThan(1);
     expect(pageCount).toBeLessThan(12);
+  });
+
+  it('lists concrete information gaps and omits empty counters', () => {
+    expect(buildInformationGapLines(report.gaps)).toEqual([
+      '仍待确认：海外市场的真实获客成本。',
+      '关键假设尚无关联证据：企业客户续费率保持稳定',
+      '无法追溯来源的证据：公司披露口径发生变化',
+      '尚未形成判断：经济质量',
+    ]);
+    expect(buildInformationGapLines({ explicitUnknowns: '', missingCoreFields: [], hypothesesWithoutEvidence: [], evidenceWithoutSource: [] }))
+      .toEqual(['当前记录中没有明确的信息缺口，但这不代表研究已经充分。']);
   });
 
   it('writes the representative fixture only when explicitly requested', async () => {
