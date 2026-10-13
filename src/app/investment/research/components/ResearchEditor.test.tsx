@@ -45,4 +45,12 @@ describe('ResearchEditor', () => {
     expect(screen.getByRole('region', { name: '研究内容滚动区' })).toBeInTheDocument();
     expect(screen.getByRole('complementary', { name: '当前栏目参考资料' })).toBeInTheDocument();
   });
+
+  it('allows every current-research text area to be resized vertically', () => {
+    render(<ResearchEditor initial={{ asset_name: '腾讯', investment_thesis: '' } as ResearchProfile} saving={false} onSubmit={vi.fn()} />);
+
+    const textAreas = screen.getAllByRole('textbox');
+    expect(textAreas.length).toBeGreaterThan(0);
+    textAreas.forEach((textArea) => expect(textArea).toHaveStyle({ resize: 'vertical' }));
+  });
 });
