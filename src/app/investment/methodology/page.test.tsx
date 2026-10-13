@@ -8,7 +8,7 @@ vi.mock('@/components/AuthGuard', () => ({ default: ({ children }: { children: R
 
 const items: MethodologyItem[] = [
   {
-    id: 'm1', user_id: 'u1', title: '现金流优先', content: '估值时检查自由现金流。', category: 'valuation',
+    id: 'm1', user_id: 'u1', title: '现金流优先', content: '## 检查项\n估值时检查**自由现金流**。', category: 'valuation',
     status: 'active', source_type: 'manual', source_ref: null, review_status: 'approved', created_at: '', updated_at: '',
   },
   {
@@ -29,6 +29,8 @@ describe('MethodologyPage filtering', () => {
     render(<App><MethodologyPage /></App>);
 
     expect(await screen.findByRole('heading', { name: '现金流优先', level: 2 })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '检查项', level: 3 })).toBeInTheDocument();
+    expect(screen.getByText('自由现金流').tagName).toBe('STRONG');
     const divider = screen.getByRole('separator', { name: '调整列表宽度' });
     expect(divider.parentElement).toHaveAttribute('data-storage-key', 'life-os:investment-methodology:left-width');
     fireEvent.click(screen.getByRole('button', { name: /分批建仓/ }));
@@ -49,7 +51,8 @@ describe('MethodologyPage filtering', () => {
     fireEvent.click(screen.getByRole('button', { name: /编辑$/ }));
     expect(screen.getByRole('dialog')).toHaveTextContent('编辑投资方法');
     expect(screen.getByLabelText('方法标题')).toHaveValue('现金流优先');
-    expect(screen.getByLabelText('规则内容')).toHaveValue('估值时检查自由现金流。');
+    expect(screen.getByLabelText('规则内容')).toHaveValue('## 检查项\n估值时检查**自由现金流**。');
+    expect(screen.getByRole('button', { name: '粗体' })).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText('方法标题'), { target: { value: '现金流与资本开支' } });
     fireEvent.click(screen.getByRole('button', { name: /保\s*存/ }));
