@@ -49,7 +49,7 @@ function drawSectionHeading(doc: PDFKit.PDFDocument, title: string) {
 function drawLabeledText(doc: PDFKit.PDFDocument, label: string, value: string) {
   if (!value.trim()) return;
   ensureSpace(doc, 76);
-  doc.fillColor(colors.ink).fontSize(13).text(label);
+  doc.save().fillColor(colors.ink).strokeColor(colors.ink).lineWidth(0.28).fontSize(13).text(label, { fill: true, stroke: true }).restore();
   doc.moveDown(0.28).fillColor(colors.muted).fontSize(12.5).text(value, { lineGap: 6 });
   doc.moveDown(0.72);
 }
