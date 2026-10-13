@@ -38,13 +38,23 @@ describe('decision report', () => {
   });
   it('uses the finalized decision and its stored snapshot rather than current research', () => {
     const report = buildDecisionReport({ decision, snapshot, exportedAt: '2026-10-02T02:00:00Z' });
-    expect(report.meta).toMatchObject({ assetName: '腾讯/控股', decisionLabel: '买入', snapshotVersion: 3 });
+    expect(report.meta).toMatchObject({ assetName: '腾讯/控股', decisionLabel: '买入', status: 'finalized', statusLabel: '已定稿', recordedAt: decision.updated_at, snapshotVersion: 3 });
     expect(report.conclusion).toEqual([
       { label: '最终决定', value: '买入' },
       { label: '核心理由', value: '赔率和长期质量匹配' },
     ]);
     expect(report.researchSummary).toContainEqual({ label: '当时的投资逻辑', value: '长期现金流质量较高' });
     expect(report.hypotheses[0]).toMatchObject({ statement: '广告份额继续提升', statusLabel: '待验证' });
+  });
+
+  it('marks an incomplete saved decision as a draft', () => {
+    const report = buildDecisionReport({
+      decision: { ...decision, status: 'draft', decision_type: null, decision_date: null },
+      snapshot,
+      exportedAt: '2026-10-02T02:00:00Z',
+    });
+    expect(report.meta).toMatchObject({ status: 'draft', statusLabel: '草稿', recordedAt: decision.updated_at });
+    expect(report.conclusion[0]).toEqual({ label: '当前决定', value: '未注明' });
   });
 
   it('builds a safe filename from the decision date and falls back to export date', () => {

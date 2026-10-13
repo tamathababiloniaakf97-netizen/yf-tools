@@ -3,12 +3,12 @@ import { dirname, resolve } from 'node:path';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { DecisionReport } from './decision-report';
-import { hasPrintableFields, renderDecisionArchivePdf, renderDecisionPdf } from './decision-pdf';
+import { getDecisionPdfPresentation, hasPrintableFields, renderDecisionArchivePdf, renderDecisionPdf } from './decision-pdf';
 
 const report: DecisionReport = {
   meta: {
     assetName: '腾讯控股', decisionLabel: '买入', decisionDate: '2026-10-01',
-    finalizedAt: '2026-10-01T08:00:00+08:00', exportedAt: '2026-10-02T08:00:00+08:00',
+    status: 'finalized', statusLabel: '已定稿', recordedAt: '2026-10-01T08:00:00+08:00', exportedAt: '2026-10-02T08:00:00+08:00',
     snapshotVersion: 3, snapshotCreatedAt: '2026-09-29T08:00:00+08:00',
   },
   conclusion: [{ label: '最终决定', value: '买入' }, { label: '核心理由', value: '当前估值提供一定安全边际，长期现金流质量与预期回报匹配。' }],
@@ -49,6 +49,17 @@ const report: DecisionReport = {
 };
 
 describe('decision PDF renderer', () => {
+  it('uses status-specific cover text and record notice', () => {
+    expect(getDecisionPdfPresentation('draft')).toEqual({
+      title: '投资决策草稿', timeLabel: '最后保存时间',
+      notice: '本报告为尚未定稿的决策草稿，内容可能继续变化。',
+    });
+    expect(getDecisionPdfPresentation('finalized')).toEqual({
+      title: '已定稿投资决策报告', timeLabel: '定稿时间',
+      notice: '本报告固定使用决策定稿时关联的研究快照。后来更新的研究、持仓、交易和复盘不会改写本报告。',
+    });
+  });
+
   it('hides an optional section when all of its fields are blank', () => {
     expect(hasPrintableFields([{ label: '仓位上限', value: '   ' }])).toBe(false);
     expect(hasPrintableFields([{ label: '仓位上限', value: '分三次建立' }])).toBe(true);
@@ -71,14 +82,21 @@ describe('decision PDF renderer', () => {
   });
 
   it('writes the representative fixture only when explicitly requested', async () => {
-    const output = resolve('output/pdf/investment-decision-sample.pdf');
+    const finalizedOutput = resolve('output/pdf/investment-decision-sample.pdf');
+    const draftOutput = resolve('output/pdf/investment-decision-draft-sample.pdf');
     if (process.env.GENERATE_DECISION_PDF_FIXTURE !== '1') {
       expect(process.env.GENERATE_DECISION_PDF_FIXTURE).not.toBe('1');
       return;
     }
-    const pdf = await renderDecisionPdf(report);
-    mkdirSync(dirname(output), { recursive: true });
-    writeFileSync(output, pdf);
-    expect(existsSync(output)).toBe(true);
+    mkdirSync(dirname(finalizedOutput), { recursive: true });
+    writeFileSync(finalizedOutput, await renderDecisionPdf(report));
+    writeFileSync(draftOutput, await renderDecisionPdf({
+      ...report,
+      meta: { ...report.meta, status: 'draft', statusLabel: '草稿', decisionDate: null },
+      conclusion: [{ label: '当前决定', value: '未注明' }, { label: '核心理由', value: '' }],
+      execution: [{ label: '仓位上限、资金安排和分批原则', value: '' }],
+    }));
+    expect(existsSync(finalizedOutput)).toBe(true);
+    expect(existsSync(draftOutput)).toBe(true);
   });
 });

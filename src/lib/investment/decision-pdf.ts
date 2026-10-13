@@ -9,6 +9,20 @@ export function hasPrintableFields(fields: DecisionReportField[]) {
   return fields.some((field) => field.value.trim().length > 0);
 }
 
+export function getDecisionPdfPresentation(status: DecisionReport['meta']['status']) {
+  return status === 'finalized'
+    ? {
+        title: '已定稿投资决策报告',
+        timeLabel: '定稿时间',
+        notice: '本报告固定使用决策定稿时关联的研究快照。后来更新的研究、持仓、交易和复盘不会改写本报告。',
+      }
+    : {
+        title: '投资决策草稿',
+        timeLabel: '最后保存时间',
+        notice: '本报告为尚未定稿的决策草稿，内容可能继续变化。',
+      };
+}
+
 function formatDate(value: string | null) {
   if (!value) return '未注明日期';
   const date = new Date(value);
@@ -72,6 +86,7 @@ function drawFooter(doc: PDFKit.PDFDocument, assetName: string, pageNumber: numb
 
 export async function renderDecisionPdf(report: DecisionReport): Promise<Buffer> {
   return new Promise((resolveBuffer, reject) => {
+    const presentation = getDecisionPdfPresentation(report.meta.status);
     const doc = new PDFDocument({
       size: 'A4', margins: { top: 54, right: 54, bottom: 58, left: 54 }, bufferPages: true,
       info: { Title: `${report.meta.assetName} - 投资决策报告`, Author: '人生工作台' },
@@ -84,16 +99,16 @@ export async function renderDecisionPdf(report: DecisionReport): Promise<Buffer>
     doc.registerFont('NotoSansSC', fontPath).font('NotoSansSC');
     doc.fillColor(colors.accent).fontSize(13).text('人生工作台 · 投资决策', { align: 'center' });
     doc.moveDown(4).fillColor(colors.ink).fontSize(28).text(report.meta.assetName, { align: 'center' });
-    doc.moveDown(0.7).fontSize(18).text('已定稿投资决策报告', { align: 'center' });
+    doc.moveDown(0.7).fontSize(18).text(presentation.title, { align: 'center' });
     doc.moveDown(2).fontSize(12).fillColor(colors.warning).text(report.meta.decisionLabel, { align: 'center' });
     doc.moveDown(4).fillColor(colors.muted).fontSize(9.5).text(`决策日期：${formatDate(report.meta.decisionDate)}`, { align: 'center' });
-    doc.moveDown(0.45).text(`定稿时间：${formatDate(report.meta.finalizedAt)}`, { align: 'center' });
+    doc.moveDown(0.45).text(`${presentation.timeLabel}：${formatDate(report.meta.recordedAt)}`, { align: 'center' });
     doc.moveDown(0.45).text(`关联研究快照：第 ${report.meta.snapshotVersion} 版 · ${formatDate(report.meta.snapshotCreatedAt)}`, { align: 'center' });
     doc.moveDown(0.45).text(`导出时间：${formatDate(report.meta.exportedAt)}`, { align: 'center' });
     doc.moveDown(7).fontSize(9).text('个人投资决策记录，不构成投资建议。', { align: 'center' });
 
     doc.addPage();
-    drawHeading(doc, '最终结论');
+    drawHeading(doc, report.meta.status === 'finalized' ? '最终结论' : '当前结论');
     drawFields(doc, report.conclusion);
     drawHeading(doc, '判断与估值');
     drawFields(doc, report.judgment);
@@ -119,7 +134,7 @@ export async function renderDecisionPdf(report: DecisionReport): Promise<Buffer>
       report.hypotheses.forEach((item, index) => drawHypothesis(doc, index, item));
     }
     ensureSpace(doc, 60);
-    doc.moveDown(0.8).fillColor(colors.muted).fontSize(8.5).text('本报告固定使用决策定稿时关联的研究快照。后来更新的研究、持仓、交易和复盘不会改写本报告。', { lineGap: 3 });
+    doc.moveDown(0.8).fillColor(colors.muted).fontSize(8.5).text(presentation.notice, { lineGap: 3 });
 
     const range = doc.bufferedPageRange();
     for (let index = 0; index < range.count; index += 1) {

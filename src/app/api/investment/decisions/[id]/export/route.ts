@@ -16,8 +16,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
   if (decisionResult.error) return Response.json({ error: decisionResult.error.message }, { status: 500 });
   if (!decisionResult.data) return Response.json({ error: '投资决策不存在' }, { status: 404 });
   const decision = decisionResult.data as InvestmentDecision;
-  if (decision.status !== 'finalized') return Response.json({ error: '只有已定稿的投资决策可以导出 PDF' }, { status: 409 });
-  if (!decision.research_snapshot_id) return Response.json({ error: '已定稿决策缺少关联研究快照' }, { status: 409 });
+  if (!decision.research_snapshot_id) return Response.json({ error: '投资决策缺少关联研究快照，请先保存研究依据' }, { status: 409 });
 
   const snapshotResult = await supabase.from('research_snapshots').select('*').eq('id', decision.research_snapshot_id).eq('user_id', user.id).maybeSingle();
   if (snapshotResult.error) return Response.json({ error: snapshotResult.error.message }, { status: 500 });

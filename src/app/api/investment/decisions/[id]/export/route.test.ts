@@ -51,10 +51,10 @@ describe('investment decision PDF export route', () => {
     expect((await GET(request, context)).status).toBe(404);
   });
 
-  it('rejects draft decisions without rendering a PDF', async () => {
-    state.client = client({ decision: { data: { id: 'decision-1', status: 'draft' }, error: null } });
-    expect((await GET(request, context)).status).toBe(409);
-    expect(renderDecisionPdf).not.toHaveBeenCalled();
+  it('exports a saved draft when it has a linked research snapshot', async () => {
+    state.client = client({ decision: { data: { id: 'decision-1', user_id: 'user-1', status: 'draft', asset_name: '腾讯', research_snapshot_id: 'snapshot-1', decision_date: null }, error: null } });
+    expect((await GET(request, context)).status).toBe(200);
+    expect(renderDecisionPdf).toHaveBeenCalledOnce();
   });
 
   it('returns 404 when the linked snapshot is absent', async () => {

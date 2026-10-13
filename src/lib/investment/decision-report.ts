@@ -14,8 +14,10 @@ export type DecisionReport = {
   meta: {
     assetName: string;
     decisionLabel: string;
+    status: InvestmentDecision['status'];
+    statusLabel: string;
     decisionDate: string | null;
-    finalizedAt: string;
+    recordedAt: string;
     exportedAt: string;
     snapshotVersion: number;
     snapshotCreatedAt: string;
@@ -37,14 +39,16 @@ export function buildDecisionReport({ decision, snapshot, exportedAt }: { decisi
     meta: {
       assetName: decision.asset_name,
       decisionLabel: label,
+      status: decision.status,
+      statusLabel: decision.status === 'finalized' ? '已定稿' : '草稿',
       decisionDate: decision.decision_date,
-      finalizedAt: decision.updated_at,
+      recordedAt: decision.updated_at,
       exportedAt,
       snapshotVersion: snapshot.snapshot_version,
       snapshotCreatedAt: snapshot.created_at,
     },
     conclusion: [
-      { label: '最终决定', value: label },
+      { label: decision.status === 'finalized' ? '最终决定' : '当前决定', value: label },
       { label: '核心理由', value: decision.final_reason },
     ],
     judgment: [
