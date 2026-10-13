@@ -5,7 +5,7 @@ import { Card, Checkbox, Typography, Tag, Space, Input, InputNumber } from 'antd
 
 const { Text } = Typography;
 
-interface RiskControl {
+export interface RiskControl {
   cashMin?: string;
   singleMax?: string;
   hedgeRatio?: string;
@@ -116,7 +116,7 @@ export default function RiskControlChecklist({ data, intent, singleAllocPercent,
         )}
 
         <Checkbox checked={capabilityConfirmed} onChange={(e) => onCapabilityChange(e.target.checked)}>
-          标的符合"第一或唯一"原则（用户自主确认）
+          标的符合&ldquo;第一或唯一&rdquo;原则（用户自主确认）
         </Checkbox>
 
         <Checkbox checked={disciplineConfirmed} onChange={(e) => onDisciplineChange(e.target.checked)}>

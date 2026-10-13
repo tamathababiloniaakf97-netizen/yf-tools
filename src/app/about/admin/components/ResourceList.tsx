@@ -14,7 +14,6 @@ export default function ResourceList() {
   const [editingResource, setEditingResource] = useState<Resource | null>(null);
 
   const loadResources = async () => {
-    setLoading(true);
     const res = await fetch('/api/resources');
     if (res.ok) {
       const data = await res.json();
@@ -24,13 +23,16 @@ export default function ResourceList() {
   };
 
   useEffect(() => {
-    loadResources();
+    void (async () => {
+      await loadResources();
+    })();
   }, []);
 
   const handleDelete = async (id: string) => {
     const res = await fetch(`/api/resources/${id}`, { method: 'DELETE' });
     if (res.ok) {
       message.success('已删除');
+      setLoading(true);
       loadResources();
     } else {
       message.error('删除失败');
@@ -131,6 +133,7 @@ export default function ResourceList() {
         onClose={() => setModalOpen(false)}
         onSuccess={() => {
           setModalOpen(false);
+          setLoading(true);
           loadResources();
         }}
       />

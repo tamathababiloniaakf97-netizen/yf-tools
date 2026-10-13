@@ -52,7 +52,7 @@ export default async function AboutPage() {
           className="text-base leading-relaxed"
           style={{ color: '#4a4a4a' }}
         >
-          专注长期价值投资，十年实战穿越多轮牛熊。从基本面研究起步，逐步构建起"分批建仓 + 长期持有 + 期权增收"三位一体的交易体系。目前致力于将这套方法论沉淀为可复制、可执行的策略框架，帮助更多学员在市场中找到适合自己的长期盈利路径。
+          专注长期价值投资，十年实战穿越多轮牛熊。从基本面研究起步，逐步构建起&ldquo;分批建仓 + 长期持有 + 期权增收&rdquo;三位一体的交易体系。目前致力于将这套方法论沉淀为可复制、可执行的策略框架，帮助更多学员在市场中找到适合自己的长期盈利路径。
         </p>
       </section>
 
@@ -170,7 +170,7 @@ export default async function AboutPage() {
           策略特长
         </h2>
         <p className="text-base leading-relaxed" style={{ color: '#4a4a4a' }}>
-          我的投资框架以"安全边际"为基石，围绕三根支柱构建：
+          我的投资框架以&ldquo;安全边际&rdquo;为基石，围绕三根支柱构建：
         </p>
         <ul
           className="text-base leading-relaxed mt-4 space-y-3"
@@ -184,12 +184,12 @@ export default async function AboutPage() {
           <li style={{ paddingLeft: 20, position: 'relative' }}>
             <span style={{ position: 'absolute', left: 0, color: '#1a1a1a' }}>—</span>
             <strong>长期持有攒股：</strong>
-            以"收集优质公司股权"为目标，每月定投优质标的，股息复投，时间换空间。不预测股价，只关心公司是否持续创造价值。
+            以&ldquo;收集优质公司股权&rdquo;为目标，每月定投优质标的，股息复投，时间换空间。不预测股价，只关心公司是否持续创造价值。
           </li>
           <li style={{ paddingLeft: 20, position: 'relative' }}>
             <span style={{ position: 'absolute', left: 0, color: '#1a1a1a' }}>—</span>
             <strong>期权增收：</strong>
-            卖出虚值看跌期权（sell put）获取权利金，降低持仓等待成本。仅在"愿意以该价格买入"的前提下开仓，不裸卖，不杠杆。
+            卖出虚值看跌期权（sell put）获取权利金，降低持仓等待成本。仅在&ldquo;愿意以该价格买入&rdquo;的前提下开仓，不裸卖，不杠杆。
           </li>
         </ul>
         <p className="text-base leading-relaxed mt-6" style={{ color: '#4a4a4a' }}>

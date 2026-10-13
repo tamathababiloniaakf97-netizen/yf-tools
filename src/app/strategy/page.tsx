@@ -10,7 +10,7 @@ import HoldingsTable from './components/HoldingsTable';
 import IntentSelector from './components/IntentSelector';
 import StrategyInput from './components/StrategyInput';
 import AiSuggestions from './components/AiSuggestions';
-import StrategyPlaybook from './components/StrategyPlaybook';
+import StrategyPlaybook, { type PlaybookData } from './components/StrategyPlaybook';
 import type { StrategyHolding, StrategyIntent, StrategyIVLevel, StrategyStatus, StrategySummary } from '@/types';
 
 const { Title, Text } = Typography;
@@ -27,7 +27,7 @@ interface AiResult {
     hedgeRatio: boolean;
     cashReserve: boolean;
   };
-  playbook: Record<string, unknown>;
+  playbook: PlaybookData;
 }
 
 export default function StrategyPage() {
@@ -59,6 +59,7 @@ export default function StrategyPage() {
 
   // PDF 导出 ref
   const rightColRef = useRef<HTMLDivElement>(null);
+  const draftHydratedRef = useRef(false);
 
   // 加载策略列表
   const loadStrategyList = useCallback(async () => {
@@ -74,27 +75,35 @@ export default function StrategyPage() {
   }, []);
 
   useEffect(() => {
-    loadStrategyList().finally(() => setPageLoading(false));
+    const timer = window.setTimeout(() => {
+      loadStrategyList().finally(() => setPageLoading(false));
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [loadStrategyList]);
 
   // 从 localStorage 恢复未保存的草稿
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return;
-      const draft = JSON.parse(raw);
-      if (draft.holdings) setHoldings(draft.holdings);
-      if (draft.intent) setIntent(draft.intent);
-      if (draft.ivLevel) setIVLevel(draft.ivLevel);
-      if (draft.userInput) setUserInput(draft.userInput);
-      if (draft.selectedId) setSelectedId(draft.selectedId);
-      if (draft.status) setStatus(draft.status);
-      if (draft.aiResult) setAiResult(draft.aiResult);
-      if (draft.capabilityConfirmed !== undefined) setCapabilityConfirmed(draft.capabilityConfirmed);
-      if (draft.disciplineConfirmed !== undefined) setDisciplineConfirmed(draft.disciplineConfirmed);
-    } catch {
-      // 草稿损坏，忽略
-    }
+    const timer = window.setTimeout(() => {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        const draft = JSON.parse(raw);
+        if (draft.holdings) setHoldings(draft.holdings);
+        if (draft.intent) setIntent(draft.intent);
+        if (draft.ivLevel) setIVLevel(draft.ivLevel);
+        if (draft.userInput) setUserInput(draft.userInput);
+        if (draft.selectedId) setSelectedId(draft.selectedId);
+        if (draft.status) setStatus(draft.status);
+        if (draft.aiResult) setAiResult(draft.aiResult);
+        if (draft.capabilityConfirmed !== undefined) setCapabilityConfirmed(draft.capabilityConfirmed);
+        if (draft.disciplineConfirmed !== undefined) setDisciplineConfirmed(draft.disciplineConfirmed);
+      } catch {
+        // 草稿损坏，忽略
+      } finally {
+        draftHydratedRef.current = true;
+      }
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   // 自动保存草稿到 localStorage
@@ -128,6 +137,7 @@ export default function StrategyPage() {
   // 自动保存草稿（防抖 1 秒）
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
+    if (!draftHydratedRef.current) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => saveDraft(), 1000);
     return () => {
@@ -305,7 +315,7 @@ export default function StrategyPage() {
       const mergedPlaybook = aiResult?.playbook ? {
         ...aiResult.playbook,
         riskControl: {
-          ...((aiResult.playbook as Record<string, unknown>).riskControl || {}),
+          ...(aiResult.playbook.riskControl || {}),
           capabilityConfirmed,
           disciplineConfirmed,
         },
@@ -510,7 +520,7 @@ export default function StrategyPage() {
                 principleCheck={aiResult.principleCheck}
               />
               <StrategyPlaybook
-                data={aiResult.playbook as any}
+                data={aiResult.playbook}
                 status={status}
                 intent={intent || ''}
                 onFieldChange={handlePlaybookChange}
@@ -538,7 +548,7 @@ export default function StrategyPage() {
               border: '1px dashed #d9d9d9',
             }}>
               <Text type="secondary" style={{ fontSize: 15 }}>
-                填写左侧信息后，点击"生成 AI 策略方案"
+                填写左侧信息后，点击&ldquo;生成 AI 策略方案&rdquo;
               </Text>
             </div>
           )}

@@ -6,7 +6,7 @@ import { PlusOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
 
-interface EntryRow {
+export interface EntryRow {
   tier: number;
   priceRange: string;
   shares: number;

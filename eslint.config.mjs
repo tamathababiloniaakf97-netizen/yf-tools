@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // This Deno entry point uses runtime-specific imports that Next.js ESLint cannot resolve.
+    "supabase/functions/portfolio-daily-snapshot/index.ts",
   ]),
 ]);
 

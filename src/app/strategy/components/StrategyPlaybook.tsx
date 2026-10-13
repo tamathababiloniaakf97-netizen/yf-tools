@@ -3,18 +3,18 @@
 import React from 'react';
 import { Typography } from 'antd';
 import StrategyOverview from './StrategyOverview';
-import EntryPlanTable from './EntryPlanTable';
-import ExitPlanTable from './ExitPlanTable';
-import OptionsPlanTable from './OptionsPlanTable';
-import RiskControlChecklist from './RiskControlChecklist';
+import EntryPlanTable, { type EntryRow } from './EntryPlanTable';
+import ExitPlanTable, { type ExitRow } from './ExitPlanTable';
+import OptionsPlanTable, { type OptionsRow } from './OptionsPlanTable';
+import RiskControlChecklist, { type RiskControl } from './RiskControlChecklist';
 import CashSummary from './CashSummary';
-import StressTestTable from './StressTestTable';
-import OperationMemo from './OperationMemo';
+import StressTestTable, { type StressRow } from './StressTestTable';
+import OperationMemo, { type MemoRow } from './OperationMemo';
 import type { StrategyStatus } from '@/types';
 
 const { Title } = Typography;
 
-interface PlaybookData {
+export interface PlaybookData {
   overview: {
     title?: string;
     type?: string;
@@ -23,18 +23,15 @@ interface PlaybookData {
     allocPercent?: string;
     referenceHigh?: number;
   };
-  entryPlan: Array<Record<string, unknown>>;
-  exitPlan: Array<Record<string, unknown>>;
-  optionsPlan: Array<Record<string, unknown>>;
-  riskControl: {
-    cashMin?: string;
-    singleMax?: string;
-    hedgeRatio?: string;
-    positiveCarry?: boolean;
-    totalMarketValue?: number;
-  };
-  stressTest: Array<Record<string, unknown>>;
-  memo: Array<Record<string, unknown>>;
+  entryPlan: EntryRow[];
+  exitPlan: ExitRow[];
+  optionsPlan: OptionsRow[];
+  riskControl: RiskControl;
+  stressTest: StressRow[];
+  memo: MemoRow[];
+  entryReferencePrice?: { price?: number };
+  exitReferencePrice?: { price?: number };
+  cashSettings?: { totalCash?: number };
 }
 
 interface Props {
@@ -57,12 +54,12 @@ interface Props {
 
 export default function StrategyPlaybook({ data, status, intent, onFieldChange, capabilityConfirmed, disciplineConfirmed, onCapabilityChange, onDisciplineChange, entryReferenceHigh, onEntryReferenceHighChange, exitReferenceLow, onExitReferenceLowChange, totalCash, onTotalCashChange, holdings }: Props) {
   const overview = data.overview || {};
-  const entryPlan = (data.entryPlan || []) as Array<Record<string, unknown>>;
-  const exitPlan = (data.exitPlan || []) as Array<Record<string, unknown>>;
-  const optionsPlan = (data.optionsPlan || []) as Array<Record<string, unknown>>;
+  const entryPlan = data.entryPlan || [];
+  const exitPlan = data.exitPlan || [];
+  const optionsPlan = data.optionsPlan || [];
   const riskControl = data.riskControl || {};
-  const stressTest = (data.stressTest || []) as Array<Record<string, unknown>>;
-  const memo = (data.memo || []) as Array<Record<string, unknown>>;
+  const stressTest = data.stressTest || [];
+  const memo = data.memo || [];
 
   const existingShares = holdings.reduce((sum, h) => sum + (h.quantity || 0), 0);
   const existingCost = holdings.reduce((sum, h) => sum + (h.costPrice || 0) * (h.quantity || 0), 0);
@@ -120,7 +117,7 @@ export default function StrategyPlaybook({ data, status, intent, onFieldChange, 
       />
 
       <EntryPlanTable
-        data={entryPlan as any[]}
+        data={entryPlan}
         onChange={(v) => onFieldChange('entryPlan', v)}
         referenceHigh={entryReferenceHigh}
         onReferenceHighChange={onEntryReferenceHighChange}
@@ -130,21 +127,21 @@ export default function StrategyPlaybook({ data, status, intent, onFieldChange, 
       />
 
       <ExitPlanTable
-        data={exitPlan as any[]}
+        data={exitPlan}
         onChange={(v) => onFieldChange('exitPlan', v)}
         referenceLow={exitReferenceLow}
         onReferenceLowChange={onExitReferenceLowChange}
-        totalShares={entryPlan.reduce((sum: number, r: any) => sum + (r.shares || 0), 0)}
+        totalShares={entryPlan.reduce((sum, row) => sum + (row.shares || 0), 0)}
         existingAvgCost={existingAvgCost}
       />
 
       <OptionsPlanTable
-        data={optionsPlan as any[]}
+        data={optionsPlan}
         onChange={(v) => onFieldChange('optionsPlan', v)}
       />
 
       <RiskControlChecklist
-        data={riskControl as any}
+        data={riskControl}
         intent={intent}
         singleAllocPercent={singleAllocPercent}
         hedgeCheck={riskControl.hedgeRatio === '2x'}
@@ -162,19 +159,19 @@ export default function StrategyPlaybook({ data, status, intent, onFieldChange, 
       <CashSummary
         totalCash={totalCash}
         onTotalCashChange={onTotalCashChange}
-        entryPlan={entryPlan as any[]}
-        optionsPlan={optionsPlan as any[]}
+        entryPlan={entryPlan}
+        optionsPlan={optionsPlan}
       />
 
       <StressTestTable
-        data={stressTest as any[]}
+        data={stressTest}
         entryPlan={entryPlan}
         optionsPlan={optionsPlan}
         onChange={(v) => onFieldChange('stressTest', v)}
       />
 
       <OperationMemo
-        data={memo as any[]}
+        data={memo}
         onChange={(v) => onFieldChange('memo', v)}
       />
     </div>

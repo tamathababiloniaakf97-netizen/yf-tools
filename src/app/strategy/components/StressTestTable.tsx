@@ -4,7 +4,7 @@ import React from 'react';
 import { Card, Table, Input, InputNumber, Button, Select } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 
-interface StressRow {
+export interface StressRow {
   scenario: string;
   priceChange: string;
   stockPnL?: string;

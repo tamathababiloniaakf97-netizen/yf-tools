@@ -4,7 +4,7 @@ import React from 'react';
 import { Card, Table, Input, InputNumber, Select, Button } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 
-interface OptionsRow {
+export interface OptionsRow {
   layer: string;
   tool: string;
   applicableState: string;

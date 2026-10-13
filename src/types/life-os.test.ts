@@ -32,6 +32,7 @@ describe('Life OS domain values', () => {
       id: 'g1', user_id: 'u1', title: '建立两段持续关系', year: 2026,
       description: '', goal_type: 'result', completion_criteria: '完成两次深入交流',
       current_state: '', current_milestone: '', next_action: '联系第一位律师',
+      next_action_due_at: null,
       target_value: 2, current_value: 0, value_unit: '人', habit_target_count: null,
       habit_completed_count: null, habit_period: null, last_progress_at: null,
       status: 'active', source_type: 'manual', source_ref: null,

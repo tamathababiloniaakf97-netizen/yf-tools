@@ -7,6 +7,7 @@ function goal(overrides: Partial<Goal> = {}): Goal {
     id: 'g1', user_id: 'u1', title: '目标', year: 2026, description: '',
     goal_type: 'direction', completion_criteria: '形成清晰判断', current_state: '探索中',
     current_milestone: '', next_action: '完成下一步', target_value: null,
+    next_action_due_at: null,
     current_value: null, value_unit: '', habit_target_count: null,
     habit_completed_count: null, habit_period: null,
     last_progress_at: '2026-10-01T00:00:00+08:00', status: 'active',

@@ -8,7 +8,7 @@ describe('buildPortfolioOverview', () => {
       totalAssets: 100, cashBalance: -60, marketValue: 160, totalInvested: 80,
       totalPnL: 20, pnlPercent: 25, openOptions: [], stockExposurePercent: 160,
       leverageMultiple: 1.6, positions: [
-        { ticker: { id: 'meta', user_id: 'u', name: 'Meta', code: 'META', type: 'stock', currency: 'USD', current_price: 65, price_updated_at: null, style: null, created_at: '' }, totalShares: 1, costPerShare: 40, totalCost: 40, currentPrice: 65, marketValue: 65, optionPnl: 0, pnl: 25, pnlPercent: 62.5, allocPercent: 65, isNegativeCost: false },
+        { ticker: { id: 'meta', user_id: 'u', name: 'Meta', code: 'META', type: 'stock_us', currency: 'USD', current_price: 65, price_updated_at: null, style: null, created_at: '' }, totalShares: 1, costPerShare: 40, totalCost: 40, currentPrice: 65, marketValue: 65, optionPnl: 0, pnl: 25, pnlPercent: 62.5, allocPercent: 65, isNegativeCost: false },
       ],
     } satisfies AccountSummary;
 

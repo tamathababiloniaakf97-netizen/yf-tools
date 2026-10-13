@@ -11,32 +11,40 @@ interface ReflectionEditorProps {
 }
 
 export default function ReflectionEditor({ value, onSave }: ReflectionEditorProps) {
-  const [text, setText] = useState(value);
   const [saving, setSaving] = useState(false);
   const { message } = App.useApp();
 
-  // Sync external value changes
-  React.useEffect(() => {
-    setText(value);
-  }, [value]);
-
-  const handleSave = useCallback(async () => {
+  const handleSave = useCallback(async (text: string) => {
     if (saving) return;
     setSaving(true);
     try {
-      const now = new Date();
-      const ts = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-      const newText = text.trim()
-        ? `[${ts}]\n${text.trim()}`
-        : '';
-      await onSave(newText);
+      await onSave(text);
       message.success('已保存');
     } catch {
       message.error('保存失败');
     } finally {
       setSaving(false);
     }
-  }, [text, saving, onSave, message]);
+  }, [saving, onSave, message]);
+
+  return <ReflectionEditorContent key={value} value={value} onSave={handleSave} saving={saving} />;
+}
+
+function ReflectionEditorContent({ value, onSave, saving }: {
+  value: string;
+  onSave: (text: string) => Promise<void>;
+  saving: boolean;
+}) {
+  const [text, setText] = useState(value);
+
+  const handleSave = useCallback(async () => {
+    const now = new Date();
+    const ts = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const newText = text.trim()
+      ? `[${ts}]\n${text.trim()}`
+      : '';
+    await onSave(newText);
+  }, [text, onSave]);
 
   return (
     <div>

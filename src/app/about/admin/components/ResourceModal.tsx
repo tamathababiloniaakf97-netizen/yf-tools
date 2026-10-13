@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Modal, Form, Input, InputNumber, Radio, Upload, Button, App } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import type { UploadFile } from 'antd/es/upload';
@@ -14,32 +14,26 @@ interface Props {
 }
 
 export default function ResourceModal({ open, resource, onClose, onSuccess }: Props) {
+  const instanceKey = `${open ? 'open' : 'closed'}-${resource?.id ?? 'new'}`;
+  return (
+    <ResourceModalContent
+      key={instanceKey}
+      open={open}
+      resource={resource}
+      onClose={onClose}
+      onSuccess={onSuccess}
+    />
+  );
+}
+
+function ResourceModalContent({ open, resource, onClose, onSuccess }: Props) {
   const [form] = Form.useForm();
   const { message } = App.useApp();
-  const [type, setType] = useState<'pdf' | 'link'>('link');
+  const [type, setType] = useState<'pdf' | 'link'>(resource?.type ?? 'link');
   const [file, setFile] = useState<File | null>(null);
   const [fileList, setFileList] = useState<UploadFile[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const isEdit = !!resource;
-
-  useEffect(() => {
-    if (resource) {
-      setType(resource.type);
-      form.setFieldsValue({
-        title: resource.title,
-        description: resource.description || '',
-        url: resource.type === 'link' ? resource.url : '',
-        sort_order: resource.sort_order,
-      });
-      setFile(null);
-      setFileList([]);
-    } else {
-      setType('link');
-      form.resetFields();
-      setFile(null);
-      setFileList([]);
-    }
-  }, [resource, form, open]);
 
   const handleSubmit = async () => {
     const values = await form.validateFields();
@@ -135,7 +129,17 @@ export default function ResourceModal({ open, resource, onClose, onSuccess }: Pr
       destroyOnHidden
       width={560}
     >
-      <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
+      <Form
+        form={form}
+        layout="vertical"
+        initialValues={resource ? {
+          title: resource.title,
+          description: resource.description || '',
+          url: resource.type === 'link' ? resource.url : '',
+          sort_order: resource.sort_order,
+        } : undefined}
+        style={{ marginTop: 16 }}
+      >
         <Form.Item label="资源类型">
           <Radio.Group
             value={type}

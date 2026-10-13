@@ -4,7 +4,7 @@ import React from 'react';
 import { Card, Table, Input, Button } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 
-interface MemoRow {
+export interface MemoRow {
   key: string;
   value: string;
 }

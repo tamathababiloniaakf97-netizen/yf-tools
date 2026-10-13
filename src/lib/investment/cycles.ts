@@ -153,7 +153,7 @@ export function normalizeCycleProfilePatch(input: Record<string, unknown>) {
 
 export type CycleAlert = { kind: 'review_due' | 'indicator_zone' | 'data_stale' | 'direction_change'; severity: 'warning' | 'error'; title: string; description: string; indicatorId?: string };
 
-export function buildCycleAlerts(profile: MarketCycleProfile, now = new Date()): CycleAlert[] {
+export function buildCycleAlerts(profile: Pick<MarketCycleProfile, 'next_review_at' | 'indicators'>, now = new Date()): CycleAlert[] {
   const alerts: CycleAlert[] = [];
   if (profile.next_review_at && new Date(`${profile.next_review_at}T23:59:59`).getTime() < now.getTime()) alerts.push({ kind: 'review_due', severity: 'warning', title: '到期复核', description: `计划复核日为 ${profile.next_review_at}` });
   for (const item of profile.indicators.filter((entry) => entry.active !== false)) {

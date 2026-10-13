@@ -30,7 +30,7 @@ export default function PortfolioOpeningModal({ open, tickers, opening, position
           quantity: position.quantity,
           unit_cost: ticker ? deriveOpeningUnitCost(position.total_cost_usd, position.quantity, ticker.currency) : 0,
           opening_price: ticker
-            ? deriveNativePrice(position.opening_market_value_usd / position.quantity, ticker.currency)
+            ? deriveNativePrice(position.opening_market_value_usd / position.quantity, ticker.currency) ?? undefined
             : undefined,
         };
       }),
