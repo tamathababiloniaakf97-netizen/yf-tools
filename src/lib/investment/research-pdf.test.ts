@@ -3,7 +3,12 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { ResearchReport } from './research-report';
-import { buildInformationGapLines, getVisibleResearchReportSections, renderResearchPdf } from './research-pdf';
+import {
+  buildInformationGapLines,
+  formatHypothesisTitle,
+  getVisibleResearchReportSections,
+  renderResearchPdf,
+} from './research-pdf';
 
 const longEvidence = '公司在最新季度披露的经营数据出现变化，需要结合管理层说明和后续两个季度的数据继续验证。'.repeat(8);
 
@@ -46,6 +51,11 @@ const report: ResearchReport = {
 };
 
 describe('research PDF renderer', () => {
+  it('numbers hypotheses using their current PDF order', () => {
+    expect(formatHypothesisTitle(0, '护城河仍需验证')).toBe('假设 1｜护城河仍需验证');
+    expect(formatHypothesisTitle(9, '需求持续增长')).toBe('假设 10｜需求持续增长');
+  });
+
   it('omits headings for sections that contain no information', () => {
     expect(getVisibleResearchReportSections({
       ...report,

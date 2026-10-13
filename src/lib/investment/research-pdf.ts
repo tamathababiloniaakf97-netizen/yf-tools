@@ -7,6 +7,10 @@ const fontPath = resolve(process.cwd(), 'src/assets/fonts/NotoSansSC-Variable.tt
 
 export type VisibleResearchReportSection = 'summary' | 'research' | 'citations' | 'checklist' | 'hypotheses' | 'evidence';
 
+export function formatHypothesisTitle(index: number, statement: string) {
+  return `假设 ${index + 1}｜${statement}`;
+}
+
 export function buildInformationGapLines(gaps: ResearchReport['gaps']) {
   const lines = [
     gaps.explicitUnknowns ? `仍待确认：${gaps.explicitUnknowns}` : '',
@@ -174,7 +178,7 @@ export async function renderResearchPdf(report: ResearchReport): Promise<Buffer>
 
     if (visibleSections.has('hypotheses')) {
       drawSectionHeading(doc, '假设与验证');
-      report.hypotheses.forEach((item) => drawRecordCard(doc, item.statement, [
+      report.hypotheses.forEach((item, index) => drawRecordCard(doc, formatHypothesisTitle(index, item.statement), [
         { label: '状态', value: item.statusLabel }, { label: '关键变量', value: item.keyVariables },
         { label: '下次检查', value: item.nextCheckAt ? formatDate(item.nextCheckAt) : '未设置' },
       ]));
