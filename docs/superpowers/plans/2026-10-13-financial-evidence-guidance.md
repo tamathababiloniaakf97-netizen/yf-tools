@@ -17,7 +17,7 @@
 - Modify: `src/app/investment/research/components/ResearchEditor.tsx`
 - Modify: `src/app/investment/research/components/ResearchEditor.test.tsx`
 
-- [ ] Add a failing test that expects exactly three financial-evidence reminders and their approved copy.
-- [ ] Extend `FieldGuidance` with an optional financial evidence line beneath the original guidance.
-- [ ] Configure the three approved core fields and leave all others unchanged.
-- [ ] Run the component tests, ESLint, TypeScript, and `git diff --check`.
+- [x] Add a failing test that expects exactly three financial-evidence reminders and their approved copy.
+- [x] Extend `FieldGuidance` with an optional financial evidence line beneath the original guidance.
+- [x] Configure the three approved core fields and leave all others unchanged.
+- [x] Run the component tests, ESLint, TypeScript, and `git diff --check`.

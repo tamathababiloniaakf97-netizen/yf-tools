@@ -28,6 +28,15 @@ describe('ResearchEditor', () => {
     expect(screen.getByText(/不代表研究得分/)).toBeInTheDocument();
   });
 
+  it('shows financial evidence reminders only for the three core fields', () => {
+    render(<ResearchEditor initial={{ asset_name: '腾讯', investment_thesis: '' } as ResearchProfile} saving={false} onSubmit={vi.fn()} />);
+
+    expect(screen.getAllByText('财务佐证')).toHaveLength(3);
+    expect(screen.getByText('必要时确认主要收入和利润来源。')).toBeInTheDocument();
+    expect(screen.getByText('尽量加入可通过财务数据验证的反证条件。')).toBeInTheDocument();
+    expect(screen.getByText('该判断应有财务数据支持，避免只有主观结论。')).toBeInTheDocument();
+  });
+
   it('shows material citations under the matching current-research field', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => [{
       id: 'e1', asset_name: '腾讯', content: '客户续约率稳定', impact: 'support', research_field: 'customer_value',
