@@ -72,7 +72,7 @@ export default function InvestmentOverviewPage() {
         const tickers = (data.tickers ?? []) as Ticker[];
         const transactions = (data.transactions ?? []) as Transaction[];
         const prices = Object.fromEntries(tickers.filter((item) => item.current_price !== null).map((item) => [item.id, item.current_price as number]));
-        setSummary(calculateAccountSummary(transactions, tickers, prices));
+        setSummary(calculateAccountSummary(transactions, tickers, prices, data.opening ? { opening: data.opening, positions: data.openingPositions ?? [] } : null, data.exchange?.rates));
       })
       .catch((err) => setError(err instanceof Error ? err.message : '持仓数据加载失败'))
       .finally(() => setLoading(false));

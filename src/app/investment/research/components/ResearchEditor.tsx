@@ -6,6 +6,7 @@ import type { EvidenceRecord, IndustryProfile, ResearchField, ResearchProfile, R
 import FieldGuidance from '../../components/FieldGuidance';
 import ResearchChecklist from './ResearchChecklist';
 import CompanyIndustrySection from './CompanyIndustrySection';
+import { browserFormDraftKey, clearBrowserFormDraft, loadBrowserFormDraft, saveBrowserFormDraft } from '@/lib/browser-form-draft';
 
 const coreFields: Array<{ name: keyof ResearchProfileInput; title: string; section: string; guidance: string; financialEvidence?: string }> = [
   { name: 'business_model', title: '公司靠什么生意挣钱？', section: '生意本质', guidance: '写清主要客户、交付的价值和收入来源；不必复述公司历史或产品清单。', financialEvidence: '必要时确认主要收入和利润来源。' },
@@ -34,16 +35,20 @@ const fieldLabels: Record<ResearchField, string> = {
 
 export default function ResearchEditor({ initial, industries = [], saving, onSubmit, onOpenIndustry = () => {} }: { initial: ResearchProfile; industries?: IndustryProfile[]; saving: boolean; onSubmit: (input: ResearchProfileInput) => void | Promise<void>; onOpenIndustry?: (id:string)=>void }) {
   const [form] = Form.useForm<ResearchProfileInput>();
+  const draftKey = browserFormDraftKey(initial.user_id, 'research', initial.id);
   const [evidence, setEvidence] = useState<EvidenceRecord[]>([]);
   const [activeField, setActiveField] = useState<ResearchField>('business_model');
   const fieldRefs = useRef<Partial<Record<ResearchField, HTMLDivElement | null>>>({});
-  useEffect(() => { form.setFieldsValue(initial); }, [form, initial]);
+  useEffect(() => { form.setFieldsValue({ ...initial, ...loadBrowserFormDraft<Partial<ResearchProfileInput>>(draftKey) }); }, [draftKey, form, initial]);
   useEffect(() => { let active = true; void fetch(`/api/investment/evidence?asset_name=${encodeURIComponent(initial.asset_name)}`).then((response) => response.ok ? response.json() : []).then((data) => { if (active) setEvidence(data); }).catch(() => { if (active) setEvidence([]); }); return () => { active = false; }; }, [initial.asset_name]);
   const citations = (field: ResearchField) => evidence.filter((item) => item.research_field === field);
   const activeCitations = citations(activeField);
   const activeLabel = fieldLabels[activeField];
   const jumpTo = (field: ResearchField) => { setActiveField(field); fieldRefs.current[field]?.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
-  return <Form form={form} layout="vertical" onFinish={onSubmit}>
+  const submit = async (values: ResearchProfileInput) => {
+    try { await onSubmit(values); clearBrowserFormDraft(draftKey); } catch { /* parent already displays the error */ }
+  };
+  return <Form form={form} layout="vertical" onValuesChange={(_, values) => saveBrowserFormDraft(draftKey, values)} onFinish={submit}>
     <div className="research-editor-nav" aria-label="当前研究栏目导航">{coreFields.map((field) => <Button key={field.name} type={activeField === field.name ? 'primary' : 'text'} size="small" onClick={() => jumpTo(field.name as ResearchField)}>{fieldLabels[field.name as ResearchField]}</Button>)}<Button type={activeField === 'management_culture' ? 'primary' : 'text'} size="small" onClick={() => jumpTo('management_culture')}>管理者与文化</Button><Button type={['current_judgment', 'risks', 'unknowns'].includes(activeField) ? 'primary' : 'text'} size="small" onClick={() => jumpTo('current_judgment')}>综合判断</Button><span className="research-editor-nav-actions"><Button type="primary" htmlType="submit" loading={saving}>保存当前研究</Button></span></div>
     <div className="research-editor-layout">
       <div className="research-editor-fields" role="region" aria-label="研究内容滚动区">

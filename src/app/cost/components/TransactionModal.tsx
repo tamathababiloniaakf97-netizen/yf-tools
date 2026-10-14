@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo } from 'react';
 import { Modal, Form, Input, Select, DatePicker, InputNumber, App } from 'antd';
+import { fromLegacyUSD } from '@/lib/exchange';
 import dayjs from 'dayjs';
 import type { Ticker, TransactionType, OptionPosition, Transaction } from '@/types';
 import { flowClassName, formatFlowAmount, valueFlow } from '@/lib/household-finance/amount-presentation';
@@ -72,6 +73,8 @@ export default function TransactionModal({ open, onClose, onSuccess, tickers, op
     [selectedTickerId, tickers]
   );
 
+  const currency = editingTransaction?.currency ?? selectedTicker?.currency;
+
   // 当前 ticker 的未平仓期权
   const tickerOpenPositions = useMemo(
     () => openPositions.filter(p => p.ticker_id === selectedTickerId && p.status === 'open' && p.remainingQuantity > 0),
@@ -93,7 +96,7 @@ export default function TransactionModal({ open, onClose, onSuccess, tickers, op
         values.quantity = tx.quantity;
         values.price = tx.price;
       } else if (tx.type === 'dividend' || tx.type === 'deposit' || tx.type === 'withdraw') {
-        values.amount_orig = tx.amount_orig;
+        values.amount_orig = tx.amount_orig ?? (tx.amount_usd == null ? undefined : Math.abs(fromLegacyUSD(tx.amount_usd, tx.currency)));
       } else if (tx.type === 'option_income' && optDetail) {
         values.option_action = optDetail.action;
         values.option_quantity = optDetail.quantity;
@@ -129,12 +132,14 @@ export default function TransactionModal({ open, onClose, onSuccess, tickers, op
         body.quantity = values.quantity;
         body.price = values.price;
         body.amount_orig = values.amount_orig || null;
-        body.currency = selectedTicker?.currency || 'USD';
+        if (!currency) throw new Error('无法确认标的币种，请重新选择标的');
+        body.currency = currency;
       } else if (values.type === 'dividend') {
         body.ticker_id = values.ticker_id;
         body.amount_orig = values.amount_orig;
         body.amount_usd = values.amount_usd;
-        body.currency = selectedTicker?.currency || 'USD';
+        if (!currency) throw new Error('无法确认标的币种，请重新选择标的');
+        body.currency = currency;
       } else if (values.type === 'option_income') {
         const direction = values.option_direction || 'sell';
         const callPut = values.option_call_put || 'put';
@@ -166,6 +171,8 @@ export default function TransactionModal({ open, onClose, onSuccess, tickers, op
         body.amount_usd = values.amount_orig;
         body.currency = 'USD';
       }
+
+      if (editingTransaction) body.currency = editingTransaction.currency;
 
       const url = isEdit ? `/api/transactions/${editingTransaction!.id}` : '/api/transactions';
       const method = isEdit ? 'PATCH' : 'POST';
@@ -208,13 +215,14 @@ export default function TransactionModal({ open, onClose, onSuccess, tickers, op
       <Form form={form} layout="vertical" initialValues={{ type: 'buy' }}>
         {/* 交易类型 */}
         <Form.Item name="type" label="交易类型" rules={[{ required: true }]}>
-          <Select options={typeOptions} />
+          <Select disabled={isEdit} options={typeOptions} />
         </Form.Item>
 
         {/* 标的选择 */}
         {requiresTicker && (
           <Form.Item name="ticker_id" label="标的" rules={[{ required: true, message: '请选择标的' }]}>
             <Select
+              disabled={isEdit}
               showSearch
               placeholder="搜索并选择标的"
               filterOption={(input, option) =>
@@ -234,7 +242,7 @@ export default function TransactionModal({ open, onClose, onSuccess, tickers, op
             <Form.Item name="quantity" label="数量" rules={[{ required: true, message: '请输入数量' }]}>
               <InputNumber style={{ width: '100%' }} placeholder="如：100" />
             </Form.Item>
-            <Form.Item name="price" label="单价（原始币种）" rules={[{ required: true, message: '请输入单价' }]}>
+            <Form.Item name="price" label={`单价（${currency ?? '请先选择标的'}）`} rules={[{ required: true, message: '请输入单价' }]}>
               <InputNumber style={{ width: '100%' }} placeholder="如：400" precision={4} />
             </Form.Item>
           </>
@@ -244,7 +252,7 @@ export default function TransactionModal({ open, onClose, onSuccess, tickers, op
         {['dividend', 'deposit', 'withdraw'].includes(txType) && (
           <Form.Item
             name="amount_orig"
-            label={txType === 'dividend' ? '分红金额（原始币种）' : '金额（USD）'}
+            label={txType === 'dividend' ? `分红金额（${currency ?? '请先选择标的'}）` : `金额（${editingTransaction?.currency ?? 'USD'}）`}
             rules={[{ required: true, message: '请输入金额' }]}
           >
             <InputNumber style={{ width: '100%' }} placeholder="如：500" precision={2} />

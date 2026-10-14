@@ -5,6 +5,7 @@ import { Table, Tag, Button, Input, InputNumber, Select, App, Tooltip, Space, Ty
 import { EyeOutlined, CloudSyncOutlined, EditOutlined } from '@ant-design/icons';
 import type { Position, TickerStyle, TickerType } from '@/types';
 import type { ColumnsType } from 'antd/es/table';
+import { formatMoney, fromLegacyUSD, toUSD } from '@/lib/exchange';
 import { filterPositions, summarizePositions } from './position-table-summary';
 
 interface Props {
@@ -47,13 +48,10 @@ const typeSelectOptions: Array<{ value: TickerType; label: string }> = [
   { value: 'crypto', label: '加密' },
 ];
 
-function formatUsd(value: number): string {
-  return `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
-function formatSignedUsd(value: number): string {
-  if (value === 0) return '$0.00';
-  return `${value > 0 ? '+' : '-'}$${Math.abs(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+function formatUsd(value: number): string { return formatMoney(value, 'USD'); }
+function formatSignedUsd(value: number): string { return formatMoney(value, 'USD', 2, true); }
+function nativeValue(record: Position, key: 'costPerShare' | 'currentPrice' | 'marketValue' | 'pnl'): number {
+  return record.valuationRate ? record[key] / record.valuationRate : fromLegacyUSD(record[key], record.ticker.currency);
 }
 
 function formatPercent(value: number | null, signed: boolean): string {
@@ -113,12 +111,13 @@ export default function PositionTable({
 
   const startEdit = (record: Position) => {
     setEditingId(record.ticker.id);
-    setEditValue(record.currentPrice || null);
+    setEditValue(Number(nativeValue(record, 'currentPrice').toFixed(4)));
   };
 
   const saveEdit = (tickerId: string) => {
     if (editValue !== null && editValue >= 0) {
-      onPriceChange(tickerId, editValue);
+      const record = positions.find((position) => position.ticker.id === tickerId);
+      if (record) onPriceChange(tickerId, toUSD(editValue, record.ticker.currency));
     }
     setEditingId(null);
     setEditValue(null);
@@ -205,18 +204,18 @@ export default function PositionTable({
       width: 100,
     },
     {
-      title: '持仓成本(USD)',
+      title: '持仓成本（原币）',
       dataIndex: 'costPerShare',
       key: 'costPerShare',
       render: (val: number, record: Position) => (
         <span style={{ color: record.isNegativeCost ? '#52c41a' : undefined }}>
-          {record.isNegativeCost ? '负成本' : `$${val.toFixed(4)}`}
+          {record.isNegativeCost ? '负成本' : formatMoney(nativeValue(record, 'costPerShare'), record.ticker.currency, 4)}
         </span>
       ),
       width: 130,
     },
     {
-      title: '期权收益',
+      title: '期权收益(USD)',
       dataIndex: 'optionPnl',
       key: 'optionPnl',
       width: 110,
@@ -224,13 +223,13 @@ export default function PositionTable({
         if (!val && val !== 0) return <span style={{ color: '#bbb' }}>—</span>;
         return (
           <span style={{ color: val >= 0 ? '#f5222d' : '#52c41a', fontWeight: 500 }}>
-            {val >= 0 ? '+' : ''}${val.toFixed(2)}
+            {formatMoney(val, 'USD', 2, true)}
           </span>
         );
       },
     },
     {
-      title: '现价(USD)',
+      title: '现价（原币）',
       dataIndex: 'currentPrice',
       key: 'currentPrice',
       render: (val: number, record: Position) => {
@@ -240,6 +239,7 @@ export default function PositionTable({
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             {isEditing ? (
               <InputNumber
+                aria-label={`现价（${record.ticker.currency}）`}
                 value={editValue}
                 onChange={(v) => setEditValue(v)}
                 onPressEnter={() => saveEdit(record.ticker.id)}
@@ -256,7 +256,7 @@ export default function PositionTable({
                   onClick={() => startEdit(record)}
                   style={{ cursor: 'pointer', borderBottom: '1px dashed #d9d9d9', minWidth: 70, display: 'inline-block' }}
                 >
-                  {val ? `$${val.toFixed(4)}` : <span style={{ color: '#bbb' }}>点击输入</span>}
+                  {val ? formatMoney(nativeValue(record, 'currentPrice'), record.ticker.currency, 4) : <span style={{ color: '#bbb' }}>点击输入</span>}
                 </span>
               </Tooltip>
             )}
@@ -272,19 +272,21 @@ export default function PositionTable({
       width: 130,
     },
     {
-      title: '市值(USD)',
+      title: '市值（原币）',
       dataIndex: 'marketValue',
       key: 'marketValue',
-      render: (val: number) => `$${val.toFixed(2)}`,
+      sorter: (a, b) => a.marketValue - b.marketValue,
+      render: (_: number, record: Position) => formatMoney(nativeValue(record, 'marketValue'), record.ticker.currency),
       width: 120,
     },
     {
-      title: '盈亏(USD)',
+      title: '盈亏（原币）',
       dataIndex: 'pnl',
       key: 'pnl',
-      render: (val: number) => (
+      sorter: (a, b) => a.pnl - b.pnl,
+      render: (val: number, record: Position) => (
         <span style={{ color: val >= 0 ? '#f5222d' : '#52c41a' }}>
-          {val >= 0 ? '+' : ''}${val.toFixed(2)}
+          {formatMoney(nativeValue(record, 'pnl'), record.ticker.currency, 2, true)}
         </span>
       ),
       width: 120,
@@ -366,7 +368,7 @@ export default function PositionTable({
         size="large"
         style={{ width: '100%', marginBottom: 12, padding: '8px 12px', background: '#fafafa', borderRadius: 6 }}
       >
-        <Typography.Text strong>{hasSelection ? '已选汇总' : '筛选汇总'}</Typography.Text>
+        <Typography.Text strong>{hasSelection ? '已选汇总' : '筛选汇总'}</Typography.Text><Typography.Text type="secondary">USD · 不含汇兑损益</Typography.Text>
         <Typography.Text type="secondary">已显示 <Typography.Text strong>{filteredSummary.visibleCount} / {filteredSummary.totalCount}</Typography.Text></Typography.Text>
         <Typography.Text type="secondary">市值 <Typography.Text strong>{formatUsd(filteredSummary.marketValue)}</Typography.Text></Typography.Text>
         <Typography.Text type="secondary">浮盈亏 <Typography.Text strong type={filteredSummary.pnl > 0 ? 'danger' : filteredSummary.pnl < 0 ? 'success' : undefined}>{formatSignedUsd(filteredSummary.pnl)}</Typography.Text></Typography.Text>
@@ -397,3 +399,4 @@ export default function PositionTable({
     </div>
   );
 }
+

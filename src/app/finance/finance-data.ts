@@ -2,6 +2,7 @@ import { calculateAccountSummary } from '@/lib/cost-engine';
 import type { PortfolioOpening, PortfolioOpeningPosition, Ticker, Transaction } from '@/types';
 
 export interface PositionsResponse {
+  exchange?: { rates: Record<string, number> };
   tickers: Ticker[];
   transactions: Transaction[];
   opening: PortfolioOpening | null;
@@ -19,6 +20,7 @@ export function summarizePositions(data: PositionsResponse) {
     data.tickers || [],
     prices,
     data.opening ? { opening: data.opening, positions: data.openingPositions || [] } : null,
+    data.exchange?.rates,
   );
 
   return {

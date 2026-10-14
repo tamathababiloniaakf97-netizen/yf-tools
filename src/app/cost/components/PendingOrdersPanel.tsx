@@ -6,6 +6,7 @@ import { DeleteOutlined, EditOutlined, PlusOutlined, SwapOutlined } from '@ant-d
 import dayjs, { type Dayjs } from 'dayjs';
 import type { ColumnsType } from 'antd/es/table';
 import type { OptionPosition, PendingOrder, PendingOrderCategory, Ticker } from '@/types';
+import { formatMoney } from '@/lib/exchange';
 import PendingOrderModal from './PendingOrderModal';
 import { calculatePendingOrderDeviation } from '@/lib/pending-orders';
 
@@ -62,12 +63,18 @@ export default function PendingOrdersPanel({ orders, tickers, openPositions, loa
     </Space>
   );
 
+  const stockMoney = (value: number, row: PendingOrder, digits = 2) => {
+    const currency = row.tickers?.currency ?? tickers.find((ticker) => ticker.id === row.ticker_id)?.currency;
+    return currency ? formatMoney(value, currency, digits) : `${value.toFixed(digits)}（币种待确认）`;
+  };
+
   const stockColumns: ColumnsType<PendingOrder> = [
     { title: '标的', key: 'ticker', render: (_, row) => `${row.tickers?.name ?? ''} (${row.tickers?.code ?? ''})` },
     { title: '方向', dataIndex: 'side', render: (side) => <Tag color={side === 'buy' ? 'red' : 'green'}>{side === 'buy' ? '买入' : '卖出'}</Tag> },
     { title: '数量', dataIndex: 'quantity' },
-    { title: '挂单价', dataIndex: 'price', render: (price: number) => `$${price.toFixed(4)}` },
-    { title: '参考价格', dataIndex: 'reference_price', render: (price: number | null) => price == null ? '—' : `$${price.toFixed(4)}` },
+    { title: '挂单价', dataIndex: 'price', render: (price: number, row) => stockMoney(price, row, 4) },
+    { title: '参考价格', dataIndex: 'reference_price', render: (price: number | null, row) => price == null ? '—' : stockMoney(price, row, 4) },
+    { title: '预计成交金额', key: 'estimatedAmount', render: (_, row) => stockMoney(row.price * row.quantity, row) },
     { title: '距参考价', key: 'deviation', render: (_, order) => { const value = calculatePendingOrderDeviation(order.price, order.reference_price); return value == null ? '—' : <Tag color={value > 0 ? 'red' : value < 0 ? 'green' : 'default'}>{value > 0 ? '+' : ''}{value.toFixed(2)}%</Tag>; } },
     { title: '挂单日期', dataIndex: 'order_date' },
     { title: '操作', key: 'actions', width: 260, render: actions },
@@ -78,8 +85,8 @@ export default function PendingOrdersPanel({ orders, tickers, openPositions, loa
     { title: '方向', dataIndex: 'side', render: (side) => side.toUpperCase() },
     { title: 'CALL/PUT', dataIndex: 'option_type', render: (value) => value?.toUpperCase() },
     { title: '合约数', dataIndex: 'quantity' },
-    { title: '实际权利金（已×100）', dataIndex: 'price', render: (price: number) => `$${price.toFixed(2)}` },
-    { title: '行权价', dataIndex: 'strike_price', render: (price: number) => `$${price}` },
+    { title: '实际权利金（已×100）', dataIndex: 'price', render: (price: number) => formatMoney(price, 'USD') },
+    { title: '行权价', dataIndex: 'strike_price', render: (price: number) => formatMoney(price, 'USD', 4) },
     { title: '到期日', dataIndex: 'expiration_date' },
     { title: '挂单日期', dataIndex: 'order_date' },
     { title: '操作', key: 'actions', width: 260, render: actions },

@@ -52,7 +52,7 @@ export async function PATCH(
   } else if (isCash) {
     if (body.amount_orig !== undefined) {
       update.amount_orig = body.amount_orig;
-      update.amount_usd = body.amount_orig; // 出入金以 USD 计
+      update.amount_usd = toUSD(body.amount_orig, tx.currency);
     }
   } else if (isOption) {
     const oldDetail = (tx.option_detail as Record<string, unknown>) || {};
@@ -106,3 +106,4 @@ export async function DELETE(
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ success: true });
 }
+

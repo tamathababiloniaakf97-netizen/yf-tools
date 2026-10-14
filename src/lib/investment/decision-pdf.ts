@@ -1,9 +1,25 @@
 import { resolve } from 'node:path';
+import { readFileSync } from 'node:fs';
+import * as fontkit from 'fontkit';
 import PDFDocument from 'pdfkit';
 import type { DecisionReport, DecisionReportField } from './decision-report';
 
 const colors = { ink: '#172033', muted: '#667085', line: '#D9DEE8', panel: '#F5F7FA', accent: '#315EFB', warning: '#9A6700' };
 const fontPath = resolve(process.cwd(), 'src/assets/fonts/NotoSansSC-Variable.ttf');
+
+export function getDecisionFieldLabelStyle() {
+  return { color: '#000000', font: 'NotoSansSCBold', weight: 900 } as const;
+}
+
+function registerDecisionFonts(doc: PDFKit.PDFDocument) {
+  const regular = fontkit.create(readFileSync(fontPath));
+  const bold = regular.getVariation({ wght: getDecisionFieldLabelStyle().weight });
+  const documentWithFontObjects = doc as PDFKit.PDFDocument & {
+    registerFont(name: string, source: fontkit.Font): PDFKit.PDFDocument;
+  };
+  documentWithFontObjects.registerFont('NotoSansSC', regular);
+  documentWithFontObjects.registerFont('NotoSansSCBold', bold);
+}
 
 export function hasPrintableFields(fields: DecisionReportField[]) {
   return fields.some((field) => field.value.trim().length > 0);
@@ -42,11 +58,13 @@ function drawHeading(doc: PDFKit.PDFDocument, title: string) {
 }
 
 function drawFields(doc: PDFKit.PDFDocument, fields: DecisionReportField[]) {
+  const labelStyle = getDecisionFieldLabelStyle();
   for (const field of fields) {
     if (!field.value.trim()) continue;
     const height = doc.fontSize(9.5).heightOfString(field.value, { width: 487, lineGap: 4 }) + 40;
     ensureSpace(doc, Math.min(height, 180));
-    doc.fillColor(colors.ink).fontSize(11).text(field.label);
+    doc.fillColor(labelStyle.color).font(labelStyle.font).fontSize(11).text(field.label);
+    doc.font('NotoSansSC');
     doc.moveDown(0.22).fillColor(colors.muted).fontSize(9.5).text(field.value, { width: 487, lineGap: 4 });
     doc.moveDown(0.72);
   }
@@ -96,7 +114,8 @@ export async function renderDecisionPdf(report: DecisionReport): Promise<Buffer>
     doc.on('error', reject);
     doc.on('end', () => resolveBuffer(Buffer.concat(chunks)));
 
-    doc.registerFont('NotoSansSC', fontPath).font('NotoSansSC');
+    registerDecisionFonts(doc);
+    doc.font('NotoSansSC');
     doc.fillColor(colors.accent).fontSize(13).text('人生工作台 · 投资决策', { align: 'center' });
     doc.moveDown(4).fillColor(colors.ink).fontSize(28).text(report.meta.assetName, { align: 'center' });
     doc.moveDown(0.7).fontSize(18).text(presentation.title, { align: 'center' });
@@ -149,7 +168,8 @@ export async function renderDecisionArchivePdf(reports: DecisionReport[]): Promi
   return new Promise((resolveBuffer, reject) => {
     const doc = new PDFDocument({ size: 'A4', margins: { top: 54, right: 54, bottom: 58, left: 54 }, bufferPages: true, info: { Title: `${reports[0]?.meta.assetName ?? ''} - 投资决策档案`, Author: '人生工作台' } });
     const chunks: Buffer[] = []; doc.on('data', (chunk: Buffer) => chunks.push(chunk)); doc.on('error', reject); doc.on('end', () => resolveBuffer(Buffer.concat(chunks)));
-    doc.registerFont('NotoSansSC', fontPath).font('NotoSansSC');
+    registerDecisionFonts(doc);
+    doc.font('NotoSansSC');
     const assetName = reports[0]?.meta.assetName ?? '投资决策';
     doc.fillColor(colors.accent).fontSize(13).text('人生工作台 · 决策档案', { align: 'center' });
     doc.moveDown(4).fillColor(colors.ink).fontSize(28).text(assetName, { align: 'center' });

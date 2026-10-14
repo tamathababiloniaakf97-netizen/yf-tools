@@ -196,6 +196,7 @@ export interface PortfolioPositionSnapshot {
 // ============================================================
 
 export interface Position {
+  valuationRate?: number; // USD per unit of the original currency
   ticker: Ticker;
   totalShares: number;
   costPerShare: number;     // USD

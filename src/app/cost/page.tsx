@@ -15,6 +15,7 @@ import PortfolioOpeningModal from './components/PortfolioOpeningModal';
 import AccountDistributionDrawer from './components/AccountDistributionDrawer';
 import PortfolioHistoryPanel from './components/PortfolioHistoryPanel';
 import { calculateAccountSummary } from '@/lib/cost-engine';
+import type { DailyExchange } from '@/lib/daily-exchange';
 import type { Ticker, Transaction, AccountSummary, PendingOrder, PortfolioOpening, PortfolioOpeningPosition, TickerStyle } from '@/types';
 
 export default function CostPage() {
@@ -22,6 +23,7 @@ export default function CostPage() {
   const [tickers, setTickers] = useState<Ticker[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [summary, setSummary] = useState<AccountSummary | null>(null);
+  const [exchange, setExchange] = useState<DailyExchange | null>(null);
   const [loading, setLoading] = useState(true);
   const [txLoading, setTxLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -73,6 +75,7 @@ export default function CostPage() {
       const data = await res.json();
       const tickersData: Ticker[] = data.tickers || [];
       setTickers(tickersData);
+      setExchange(data.exchange ?? null);
       setOpening(data.opening ?? null);
       setOpeningPositions(data.openingPositions ?? []);
 
@@ -83,7 +86,7 @@ export default function CostPage() {
 
       // 计算账户汇总
       const accountSummary = calculateAccountSummary(data.transactions || [], tickersData, prices,
-        data.opening ? { opening: data.opening, positions: data.openingPositions || [] } : null);
+        data.opening ? { opening: data.opening, positions: data.openingPositions || [] } : null, data.exchange?.rates);
       setSummary(accountSummary);
     } catch (err) {
       console.error(err);
@@ -136,7 +139,7 @@ export default function CostPage() {
     localStorage.setItem('currentPrices', JSON.stringify(newPrices));
 
     // 重新计算汇总
-    const newSummary = calculateAccountSummary(transactions, tickers, newPrices, opening ? { opening, positions: openingPositions } : null);
+    const newSummary = calculateAccountSummary(transactions, tickers, newPrices, opening ? { opening, positions: openingPositions } : null, exchange?.rates);
     setSummary(newSummary);
 
     // 保存到数据库
@@ -193,7 +196,7 @@ export default function CostPage() {
       localStorage.setItem('currentPrices', JSON.stringify(newPrices));
 
       // 重新计算汇总
-      const newSummary = calculateAccountSummary(transactions, tickers, newPrices, opening ? { opening, positions: openingPositions } : null);
+      const newSummary = calculateAccountSummary(transactions, tickers, newPrices, opening ? { opening, positions: openingPositions } : null, exchange?.rates);
       setSummary(newSummary);
 
       const count = data.summary?.updated ?? data.results.length - failed.length;
@@ -224,7 +227,7 @@ export default function CostPage() {
   }, [summary]);
 
   return (
-    <AuthGuard>
+    <AuthGuard><Alert type="info" showIcon style={{ marginBottom: 16 }} title="明细按原币显示，汇总统一为美元" description={exchange?.date ? `参考汇率日期 ${exchange.date}（ECB）：1 USD = ${(1 / exchange.rates.CNY).toFixed(4)} CNY / ${(1 / exchange.rates.HKD).toFixed(4)} HKD。${exchange.fallback ? "暂沿用上次成功汇率。" : "后台每日自动更新。"}原币明细不受汇率更新影响。` : "正在获取每日参考汇率；暂按备用比例 1 USD = 7.2 CNY / 7.8 HKD 汇总。"} />
       {/* 顶部操作栏 */}
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
         <Space>
@@ -350,3 +353,4 @@ export default function CostPage() {
     </AuthGuard>
   );
 }
+

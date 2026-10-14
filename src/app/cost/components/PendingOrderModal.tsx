@@ -18,6 +18,8 @@ interface Props {
 export default function PendingOrderModal({ open, category, order, tickers, openPositions, onClose, onSuccess }: Props) {
   const [form] = Form.useForm();
   const { message } = App.useApp();
+  const selectedTickerId = Form.useWatch('ticker_id', form);
+  const currency = tickers.find((ticker) => ticker.id === selectedTickerId)?.currency ?? (selectedTickerId === order?.ticker_id ? order?.tickers?.currency : undefined);
   const optionAction = Form.useWatch('option_action', form);
   const [referenceLoading, setReferenceLoading] = useState(false);
 
@@ -47,6 +49,7 @@ export default function PendingOrderModal({ open, category, order, tickers, open
   const save = async () => {
     try {
       const values = await form.validateFields();
+      if (category === 'stock' && !currency) throw new Error('无法确认标的币种，请重新选择标的');
       const body = {
         ticker_id: values.ticker_id,
         category,
@@ -119,10 +122,10 @@ export default function PendingOrderModal({ open, category, order, tickers, open
         <Form.Item name="quantity" label={category === 'stock' ? '数量' : '合约数量'} rules={[{ required: true }]}>
           <InputNumber min={0.000001} style={{ width: '100%' }} />
         </Form.Item>
-        <Form.Item name="price" label={category === 'stock' ? '挂单价（原始币种）' : '每张合约实际权利金（USD，已 ×100）'} rules={[{ required: true }]}>
+        <Form.Item name="price" label={category === 'stock' ? `挂单价（${currency ?? '请先选择标的'}）` : '每张合约实际权利金（USD，已 ×100）'} rules={[{ required: true }]}>
           <InputNumber min={0.000001} precision={4} style={{ width: '100%' }} />
         </Form.Item>
-        {category === 'stock' && <Form.Item label="参考价格" extra="仅用于待成交挂单的价格比较，不进入交易流水。"><Space.Compact block><Form.Item name="reference_price" noStyle rules={[{ validator: (_, value) => value == null || value > 0 ? Promise.resolve() : Promise.reject(new Error('参考价格必须大于 0')) }]}><InputNumber aria-label="参考价格" min={0.000001} precision={4} style={{ width: '100%' }} /></Form.Item><Button loading={referenceLoading} onClick={() => void loadPreviousClose()}>获取前一日收盘价</Button></Space.Compact></Form.Item>}
+        {category === 'stock' && <Form.Item label={`参考价格（${currency ?? '请先选择标的'}）`} extra="仅用于待成交挂单的价格比较，不进入交易流水。"><Space.Compact block><Form.Item name="reference_price" noStyle rules={[{ validator: (_, value) => value == null || value > 0 ? Promise.resolve() : Promise.reject(new Error('参考价格必须大于 0')) }]}><InputNumber aria-label="参考价格" min={0.000001} precision={4} style={{ width: '100%' }} /></Form.Item><Button loading={referenceLoading} onClick={() => void loadPreviousClose()}>获取前一日收盘价</Button></Space.Compact></Form.Item>}
         {category === 'option' && (
           <>
             <Form.Item name="strike_price" label="行权价（USD）" rules={[{ required: true }]}><InputNumber min={0.000001} precision={4} style={{ width: '100%' }} /></Form.Item>

@@ -22,6 +22,12 @@ function renderPanel(onRefresh = vi.fn()) {
 }
 
 describe('PendingOrdersPanel', () => {
+  it('shows original currency prices and estimated stock order amount', () => {
+    render(<App><PendingOrdersPanel orders={[{ ...orders[0], tickers: { name: '腾讯', code: '700', currency: 'HKD' } }]} tickers={tickers} openPositions={[]} loading={false} onRefresh={vi.fn()} /></App>);
+    expect(screen.getByText('HK$ 380.0000')).toBeInTheDocument();
+    expect(screen.getByText('HK$ 400.0000')).toBeInTheDocument();
+    expect(screen.getByText('HK$ 1,900.00')).toBeInTheDocument();
+  });
   it('uses separate stock and option columns', () => {
     renderPanel();
     expect(screen.getAllByText('挂单价').length).toBeGreaterThan(0);
@@ -31,7 +37,7 @@ describe('PendingOrdersPanel', () => {
     fireEvent.click(screen.getByText('期权挂单 1'));
     expect(screen.getAllByText('行权价').length).toBeGreaterThan(0);
     expect(screen.getAllByText('到期日').length).toBeGreaterThan(0);
-    expect(screen.getByText('$250.00')).toBeInTheDocument();
+    expect(screen.getByText('US$ 250.00')).toBeInTheDocument();
   });
 
   it('offers every ticker in the independent filter', () => {

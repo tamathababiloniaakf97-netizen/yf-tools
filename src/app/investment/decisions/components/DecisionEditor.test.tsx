@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import DecisionEditor from './DecisionEditor';
 import type { InvestmentDecision } from '@/types/life-os';
@@ -29,3 +29,20 @@ describe('DecisionEditor', () => {
     expect(screen.queryByRole('button', { name: '保存草稿' })).not.toBeInTheDocument();
   });
 });
+
+it('restores unsaved text after leaving and keeps other accounts separate', async () => {
+  localStorage.clear();
+  const decision = { ...draft, user_id: 'user-a' };
+  const props = { decision, snapshots: [], saving: false, onSave: vi.fn(), onFinalize: vi.fn() };
+  const first = render(<DecisionEditor {...props} />);
+  fireEvent.change(screen.getByLabelText('核心理由'), { target: { value: '尚未保存的重要判断' } });
+  first.unmount();
+  const restored = render(<DecisionEditor {...props} />);
+  expect(screen.getByLabelText('核心理由')).toHaveValue('尚未保存的重要判断');
+  expect(await screen.findByText('已恢复本浏览器中未保存的草稿')).toBeInTheDocument();
+  restored.unmount();
+  render(<DecisionEditor {...props} decision={{ ...decision, user_id: 'user-b' }} />);
+  expect(screen.getByLabelText('核心理由')).not.toHaveValue('尚未保存的重要判断');
+  localStorage.clear();
+});
+

@@ -3,7 +3,7 @@ import { dirname, resolve } from 'node:path';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { DecisionReport } from './decision-report';
-import { getDecisionPdfPresentation, hasPrintableFields, renderDecisionArchivePdf, renderDecisionPdf } from './decision-pdf';
+import { getDecisionFieldLabelStyle, getDecisionPdfPresentation, hasPrintableFields, renderDecisionArchivePdf, renderDecisionPdf } from './decision-pdf';
 
 const report: DecisionReport = {
   meta: {
@@ -49,6 +49,10 @@ const report: DecisionReport = {
 };
 
 describe('decision PDF renderer', () => {
+  it('renders field labels in solid black with a heavier stroke', () => {
+    expect(getDecisionFieldLabelStyle()).toEqual({ color: '#000000', font: 'NotoSansSCBold', weight: 900 });
+  });
+
   it('uses status-specific cover text and record notice', () => {
     expect(getDecisionPdfPresentation('draft')).toEqual({
       title: '投资决策草稿', timeLabel: '最后保存时间',

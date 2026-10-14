@@ -4,6 +4,8 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import AuthGuard from '@/components/AuthGuard';
+import { useAuthSession } from '@/components/AuthSessionContext';
+import { decisionDraftKey } from '@/lib/investment/decision-draft';
 import DecisionEditor from '../components/DecisionEditor';
 import DecisionCopyButton from '../components/DecisionCopyButton';
 import DecisionPdfExportButton from '../components/DecisionPdfExportButton';
@@ -15,15 +17,51 @@ function emptyDecision(): InvestmentDecision {
 
 export default function DecisionDetailPage() {
   const { id } = useParams<{ id: string }>(); const router = useRouter(); const { message } = App.useApp(); const isNew = id === 'new';
+  const { user } = useAuthSession();
+
   const [decision, setDecision] = useState<InvestmentDecision | null>(null); const [profiles, setProfiles] = useState<ResearchProfile[]>([]); const [snapshots, setSnapshots] = useState<ResearchSnapshot[]>([]); const [saving, setSaving] = useState(false); const [error, setError] = useState('');
+  const clearDraft = () => { if (user && decision) { try { localStorage.removeItem(decisionDraftKey(user.id, decision)); } catch {} } };
   const loadSnapshots = useCallback(async (profileId: string) => { if (!profileId) return setSnapshots([]); const response = await fetch(`/api/investment/research/${profileId}/snapshots`); if (response.ok) setSnapshots(await response.json()); }, []);
-  const load = useCallback(async () => { try { const profilesResponse = await fetch('/api/investment/research'); const profileData = await profilesResponse.json(); if (!profilesResponse.ok) throw new Error(profileData.error || '公司研究加载失败'); setProfiles(profileData); if (isNew) { const search = new URLSearchParams(window.location.search); const profileId = search.get('research_profile_id') ?? ''; const snapshotId = search.get('snapshot_id'); const profile = profileData.find((item: ResearchProfile) => item.id === profileId); setDecision({ ...emptyDecision(), research_profile_id: profileId, research_snapshot_id: snapshotId, asset_name: profile?.asset_name ?? '' }); await loadSnapshots(profileId); } else { const response = await fetch(`/api/investment/decisions/${id}`); const data = await response.json(); if (!response.ok) throw new Error(data.error || '投资决策加载失败'); setDecision(data); await loadSnapshots(data.research_profile_id); } } catch (err) { setError(err instanceof Error ? err.message : '加载失败'); } }, [id, isNew, loadSnapshots]);
+  const [profilesLoading, setProfilesLoading] = useState(true);
+  const load = useCallback(async () => {
+    let profileId = '';
+    if (isNew) {
+      const search = new URLSearchParams(window.location.search);
+      profileId = search.get('research_profile_id') ?? '';
+      if (!profileId && user) {
+        try { profileId = localStorage.getItem('decision-last-company:' + user.id) || ''; } catch {}
+      }
+      // Show the editor and restore its browser draft before any network request.
+      setDecision({ ...emptyDecision(), user_id: user?.id ?? '', research_profile_id: profileId, research_snapshot_id: search.get('snapshot_id') });
+    }
+    setProfilesLoading(true);
+    try {
+      const profilesResponse = await fetch('/api/investment/research');
+      const profileData = await profilesResponse.json();
+      if (!profilesResponse.ok) throw new Error(profileData.error || '公司研究加载失败');
+      setProfiles(profileData);
+      if (isNew) {
+        // Do not replace the decision here: the user may already be typing.
+        if (profileId) await loadSnapshots(profileId);
+      } else {
+        const response = await fetch(`/api/investment/decisions/${id}`);
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || '投资决策加载失败');
+        setDecision(data);
+        await loadSnapshots(data.research_profile_id);
+      }
+    } catch (err) { setError(err instanceof Error ? err.message : '加载失败'); }
+    finally { setProfilesLoading(false); }
+  }, [id, isNew, loadSnapshots, user]);
   useEffect(() => { const timer = window.setTimeout(() => void load(), 0); return () => window.clearTimeout(timer); }, [load]);
-  const chooseProfile = async (profileId: string) => { const profile = profiles.find((item) => item.id === profileId); setDecision((current) => current ? { ...current, research_profile_id: profileId, research_snapshot_id: null, asset_name: profile?.asset_name ?? '' } : current); await loadSnapshots(profileId); };
-  const persist = async (input: InvestmentDecisionInput) => { const response = await fetch(isNew ? '/api/investment/decisions' : `/api/investment/decisions/${id}`, { method: isNew ? 'POST' : 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input) }); const data = await response.json(); if (!response.ok) throw new Error(data.error || '保存失败'); setDecision(data); if (isNew) router.replace(`/investment/decisions/${data.id}`); return data as InvestmentDecision; };
+  const chooseProfile = async (profileId: string) => { if (user) { try { localStorage.setItem('decision-last-company:' + user.id, profileId); } catch {} } const profile = profiles.find((item) => item.id === profileId); setDecision((current) => current ? { ...current, research_profile_id: profileId, research_snapshot_id: null, asset_name: profile?.asset_name ?? '' } : current); await loadSnapshots(profileId); };
+  const persist = async (input: InvestmentDecisionInput) => { const response = await fetch(isNew ? '/api/investment/decisions' : `/api/investment/decisions/${id}`, { method: isNew ? 'POST' : 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...input, asset_name: profiles.find(item => item.id === input.research_profile_id)?.asset_name || input.asset_name }) }); const data = await response.json(); if (!response.ok) throw new Error(data.error || '保存失败'); clearDraft(); setDecision(data); if (isNew) router.replace(`/investment/decisions/${data.id}`); return data as InvestmentDecision; };
   const save = async (input: InvestmentDecisionInput) => { setSaving(true); try { await persist(input); message.success('决策草稿已保存'); } catch (err) { message.error(err instanceof Error ? err.message : '保存失败'); } finally { setSaving(false); } };
-  const finalize = async (input: InvestmentDecisionInput) => { setSaving(true); try { const saved = isNew ? await persist(input) : decision!; const response = await fetch(`/api/investment/decisions/${saved.id}/finalize`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input) }); const data = await response.json(); if (!response.ok) throw new Error(data.error || '定稿失败'); setDecision(data); router.replace(`/investment/decisions/${data.id}`); message.success('投资决策已定稿'); } catch (err) { message.error(err instanceof Error ? err.message : '定稿失败'); } finally { setSaving(false); } };
+  const finalize = async (input: InvestmentDecisionInput) => { setSaving(true); try { const saved = isNew ? await persist(input) : decision!; const response = await fetch(`/api/investment/decisions/${saved.id}/finalize`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input) }); const data = await response.json(); if (!response.ok) throw new Error(data.error || '定稿失败'); clearDraft(); setDecision(data); router.replace(`/investment/decisions/${data.id}`); message.success('投资决策已定稿'); } catch (err) { message.error(err instanceof Error ? err.message : '定稿失败'); } finally { setSaving(false); } };
   const taskHref = decision ? `/investment/tasks?new=1&asset_name=${encodeURIComponent(decision.asset_name)}&task_type=validation&title=${encodeURIComponent(`跟进${decision.asset_name}投资决策`)}&condition_note=${encodeURIComponent(decision.final_reason || decision.error_signals || '')}` : '/investment/tasks';
-  return <AuthGuard><div className="page-heading"><div><Typography.Title level={2}>{decision?.asset_name || '新建投资决策'}</Typography.Title><Typography.Text type="secondary">决策草稿可以不完整保存；定稿前必须完成核心检查。</Typography.Text></div>{decision?.id && <Space><DecisionPdfExportButton decisionId={decision.id} assetName={decision.asset_name} decisionDate={decision.decision_date} />{decision.status === 'finalized' && <DecisionCopyButton decisionId={decision.id} />}<Link href={taskHref}><Button>转成投资待办</Button></Link></Space>}</div>{error && <Alert type="error" showIcon message={error} style={{ marginBottom: 16 }} />}{!decision ? <Card><Spin /></Card> : <>{isNew && <Card title="选择公司研究" style={{ marginBottom: 16 }}><Select style={{ width: '100%' }} value={decision.research_profile_id || undefined} placeholder="选择一家公司" options={profiles.map((item) => ({ value: item.id, label: item.asset_name }))} onChange={(value) => void chooseProfile(value)} /></Card>}<DecisionEditor decision={decision} snapshots={snapshots} saving={saving} onSave={save} onFinalize={finalize} /></>}
+  return <AuthGuard><div className="page-heading"><div><Typography.Title level={2}>{decision?.asset_name || profiles.find(item => item.id === decision?.research_profile_id)?.asset_name || '新建投资决策'}</Typography.Title><Typography.Text type="secondary">决策草稿可以不完整保存；定稿前必须完成核心检查。</Typography.Text></div>{decision?.id && <Space><DecisionPdfExportButton decisionId={decision.id} assetName={decision.asset_name} decisionDate={decision.decision_date} />{decision.status === 'finalized' && <DecisionCopyButton decisionId={decision.id} />}<Link href={taskHref}><Button>转成投资待办</Button></Link></Space>}</div>{error && <Alert type="error" showIcon message={error} style={{ marginBottom: 16 }} />}{!decision ? <Card><Spin /></Card> : <>{isNew && <Card title="选择公司研究" style={{ marginBottom: 16 }}><Select loading={profilesLoading} style={{ width: '100%' }} value={decision.research_profile_id || undefined} placeholder="选择一家公司" options={profiles.map((item) => ({ value: item.id, label: item.asset_name }))} onChange={(value) => void chooseProfile(value)} /></Card>}<DecisionEditor decision={decision} snapshots={snapshots} saving={saving} onSave={save} onFinalize={finalize} /></>}
   </AuthGuard>;
 }
+
+
+

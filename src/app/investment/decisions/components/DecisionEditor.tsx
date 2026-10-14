@@ -1,6 +1,8 @@
 'use client';
 import { Alert, Button, Card, Form, Input, Select, Space, Tag, Typography } from 'antd';
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useAuthSession } from '@/components/AuthSessionContext';
+import { decisionDraftKey } from '@/lib/investment/decision-draft';
 import type { InvestmentDecision, InvestmentDecisionInput, ResearchSnapshot } from '@/types/life-os';
 import FieldGuidance from '../../components/FieldGuidance';
 
@@ -10,9 +12,41 @@ const decisionOptions = [
 
 export default function DecisionEditor({ decision, snapshots, saving, onSave, onFinalize }: { decision: InvestmentDecision; snapshots: ResearchSnapshot[]; saving: boolean; onSave: (input: InvestmentDecisionInput) => void | Promise<void>; onFinalize: (input: InvestmentDecisionInput) => void | Promise<void> }) {
   const [form] = Form.useForm<InvestmentDecisionInput>(); const finalized = decision.status === 'finalized';
-  useEffect(() => { form.setFieldsValue(decision); }, [decision, form]);
+  const { user } = useAuthSession();
+  const userId = user?.id || decision.user_id;
+  const key = userId && decision.research_profile_id ? decisionDraftKey(userId, decision) : null;
+  const [notice, setNotice] = useState('');
+  const previousProfile = useRef(decision.research_profile_id);
+  useEffect(() => {
+    let nextNotice = '填写内容会自动暂存在本浏览器';
+    const unassigned = !previousProfile.current && decision.research_profile_id ? form.getFieldsValue() : null;
+    previousProfile.current = decision.research_profile_id;
+    form.resetFields();
+    form.setFieldsValue(decision);
+    if (unassigned) form.setFieldsValue({ ...unassigned, research_profile_id: decision.research_profile_id, asset_name: decision.asset_name });
+    try {
+      const raw = !finalized && key ? localStorage.getItem(key) : null;
+      if (raw) {
+        const draft = JSON.parse(raw);
+        if (draft && typeof draft === 'object' && !Array.isArray(draft)) {
+          form.setFieldsValue({ ...draft, research_profile_id: decision.research_profile_id, asset_name: decision.asset_name });
+          nextNotice = '已恢复本浏览器中未保存的草稿';
+        }
+      }
+    } catch { nextNotice = '浏览器草稿无法读取，请及时点击保存草稿'; }
+    const timer = window.setTimeout(() => setNotice(nextNotice), 0);
+    return () => window.clearTimeout(timer);
+  }, [decision, form, key, finalized]);
+  const cacheDraft = (_: unknown, all: InvestmentDecisionInput) => {
+    if (!key || finalized) return;
+    try {
+      localStorage.setItem(key, JSON.stringify(all, (_key, value) => value === undefined ? null : value));
+      setNotice('未保存的内容已暂存在本浏览器');
+    } catch { setNotice('浏览器暂存失败，请及时点击保存草稿'); }
+  };
   const values = () => form.validateFields();
-  return <Form form={form} layout="vertical" disabled={finalized}><Space orientation="vertical" size={16} style={{ width: '100%' }}>
+  return <Form form={form} layout="vertical" disabled={finalized || saving} onValuesChange={cacheDraft}><Space orientation="vertical" size={16} style={{ width: '100%' }}>
+    {!finalized && <Typography.Text type="secondary">{notice}</Typography.Text>}
     {finalized && <Alert type="success" showIcon message="已定稿，只读" description="观点变化时请新建决策，不要覆盖历史。" />}
     <Card title="研究依据"><Form.Item name="research_snapshot_id" label="关联研究快照（定稿必选）" extra={<FieldGuidance>选择本次决策真正依据的当时研究版本；定稿后该版本不会被后续研究覆盖。</FieldGuidance>}><Select allowClear placeholder="选择当时的研究快照" options={snapshots.map((item) => ({ value: item.id, label: `版本 ${item.snapshot_version} · ${new Date(item.created_at).toLocaleDateString('zh-CN')}` }))} /></Form.Item></Card>
     <Card title="市场预期"><Form.Item name="market_expectation" label="市场当前主要相信什么？" extra={<FieldGuidance>写当前价格隐含的主流预期及其依据；不要把自己的观点写在这里。</FieldGuidance>}><Input.TextArea rows={2} /></Form.Item><Form.Item name="personal_divergence" label="我的判断与市场的关键分歧" extra={<FieldGuidance>只写会实质影响价值或回报的分歧，并说明自己为何可能正确。</FieldGuidance>}><Input.TextArea rows={2} /></Form.Item></Card>
@@ -26,3 +60,6 @@ export default function DecisionEditor({ decision, snapshots, saving, onSave, on
     {!finalized && <Space><Button type="primary" loading={saving} onClick={() => void values().then(onSave)}>保存草稿</Button><Button loading={saving} onClick={() => void values().then(onFinalize)}>定稿</Button><Typography.Text type="secondary"><Tag>定稿后不可覆盖</Tag></Typography.Text></Space>}
   </Space></Form>;
 }
+
+
+

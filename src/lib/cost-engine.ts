@@ -1,5 +1,5 @@
 import type { CostBasisResult, Transaction, Ticker, Position, AccountSummary, OptionPosition, OptionDetail, OptionCallPut, PortfolioOpening, PortfolioOpeningPosition } from '@/types';
-import { toUSD } from './exchange';
+import { toUSD, getRate, LEGACY_RATES } from './exchange';
 import { parseLegacyOptionType } from '@/types';
 import { calculateXirr } from './xirr';
 
@@ -197,6 +197,7 @@ export function calculateAccountSummary(
   tickers: Ticker[],
   currentPrices: Record<string, number>,
   openingData?: { opening: PortfolioOpening; positions: PortfolioOpeningPosition[] } | null,
+  rates: Readonly<Record<string, number>> = LEGACY_RATES,
 ): AccountSummary {
   let totalDeposit = 0;
   let totalWithdraw = 0;
@@ -245,7 +246,11 @@ export function calculateAccountSummary(
     const costBasis = calculateCostBasis(tickerTx, ticker.currency, openingPositionMap.get(ticker.id));
     if (costBasis.totalShares <= 0) continue;
 
-    const currentPrice = currentPrices[ticker.id] ?? 0;
+    const valuationRate = rates[ticker.currency] ?? getRate(ticker.currency);
+    const factor = valuationRate / getRate(ticker.currency);
+    costBasis.costPerShare *= factor;
+    costBasis.totalCost *= factor;
+    const currentPrice = (currentPrices[ticker.id] ?? 0) * factor;
     const marketValue = costBasis.totalShares * currentPrice;
     totalMarketValue += marketValue;
 
@@ -255,6 +260,7 @@ export function calculateAccountSummary(
       : 0;
 
     positions.push({
+      valuationRate,
       ticker,
       totalShares: costBasis.totalShares,
       costPerShare: costBasis.costPerShare,

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getDailyExchange } from '@/lib/daily-exchange';
 import { createServerSideClient } from '@/lib/supabase/server';
 
 // GET /api/positions — 获取持仓汇总和成本数据
@@ -30,5 +31,5 @@ export async function GET() {
   ]);
   if (openingErr || openingPositionsErr) return NextResponse.json({ error: openingErr?.message || openingPositionsErr?.message }, { status: 500 });
 
-  return NextResponse.json({ tickers, transactions, opening, openingPositions: openingPositions ?? [] });
+  return NextResponse.json({ tickers, transactions, opening, openingPositions: openingPositions ?? [], exchange: await getDailyExchange() });
 }

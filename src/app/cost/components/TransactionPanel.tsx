@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Table, Select, DatePicker, Tag, Button, Popconfirm, App, Segmented, Space } from 'antd';
+import { Table, Select, DatePicker, Tag, Button, Popconfirm, App, Segmented, Space, Tooltip } from 'antd';
 import { DeleteOutlined, DownloadOutlined, FilterOutlined, EditOutlined } from '@ant-design/icons';
+import { formatMoney, fromLegacyUSD } from '@/lib/exchange';
 import * as XLSX from 'xlsx';
-import type { Transaction, TransactionType, OptionAction, OptionDirection, OptionCallPut } from '@/types';
+import type { Transaction, TransactionType } from '@/types';
 import type { ColumnsType } from 'antd/es/table';
 import { flowClassName, formatFlowAmount, valueFlow } from '@/lib/household-finance/amount-presentation';
 
@@ -57,8 +58,13 @@ function downloadExcel(columns: ColumnsType<Transaction>, data: Transaction[], f
         }
         if (c.key === 'price') {
           if (record.type === 'option_income') return record.option_detail?.price ?? '—';
-          return record.price ?? '—';
+          return record.price == null ? '—' : formatMoney(record.price, record.currency, 4);
         }
+        if (c.key === 'amount_orig') {
+          const amount = record.amount_orig ?? (record.amount_usd == null ? null : fromLegacyUSD(record.amount_usd, record.currency));
+          return amount == null ? '—' : formatMoney((record.type === 'buy' || record.type === 'withdraw' ? -1 : 1) * Math.abs(amount), record.currency, 2, true);
+        }
+        if (c.key === 'trade_date') return record.trade_date;
         if (c.key === 'amount_usd') return record.amount_usd ?? '—';
         if (c.key === 'strike_price') return record.option_detail?.strike_price ?? '—';
         if (c.key === 'expiration_date') return record.option_detail?.expiration_date ?? '—';
@@ -159,23 +165,21 @@ export default function TransactionPanel({
       dataIndex: 'price',
       key: 'price',
       width: 100,
-      render: (val: number | null) => (val ? `$${val.toFixed(4)}` : '—'),
+      render: (val: number | null, record) => val == null ? '—' : formatMoney(val, record.currency, 4),
     },
     {
-      title: '金额(USD)',
-      dataIndex: 'amount_usd',
-      key: 'amount_usd',
-      width: 120,
+      title: '金额（原币）',
+      dataIndex: 'amount_orig',
+      key: 'amount_orig',
+      width: 160,
       render: (val: number | null, record: Transaction) => {
-        if (val === null || val === undefined) return '—';
-        // 买入/出金是资金流出，显示为负；卖出/分红/入金是资金流入，显示为正
-        const isOutflow = record.type === 'buy' || record.type === 'withdraw';
-        const displayVal = isOutflow ? -Math.abs(val) : Math.abs(val);
-        const flow = valueFlow(displayVal);
+        const amount = val ?? (record.amount_usd == null ? null : fromLegacyUSD(record.amount_usd, record.currency));
+        if (amount === null) return '—';
+        const displayVal = (record.type === 'buy' || record.type === 'withdraw' ? -1 : 1) * Math.abs(amount);
         return (
-          <span className={flowClassName(flow)}>
-            {formatFlowAmount(displayVal, flow, 'USD')}
-          </span>
+          <Tooltip title={record.amount_usd == null ? undefined : `记录时折算：${formatMoney(record.amount_usd, 'USD')}`}>
+            <span className={flowClassName(valueFlow(displayVal))}>{formatMoney(displayVal, record.currency, 2, true)}</span>
+          </Tooltip>
         );
       },
     },
@@ -277,7 +281,7 @@ export default function TransactionPanel({
       width: 110,
       render: (_: unknown, record: Transaction) => {
         const p = record.option_detail?.price;
-        return p ? `$${p.toFixed(2)}` : '—';
+        return p ? formatMoney(p, 'USD') : '—';
       },
     },
     {
@@ -301,7 +305,7 @@ export default function TransactionPanel({
       width: 90,
       render: (_: unknown, record: Transaction) => {
         const s = record.option_detail?.strike_price;
-        return s ? `$${s}` : '—';
+        return s ? formatMoney(s, 'USD', 4) : '—';
       },
     },
     {

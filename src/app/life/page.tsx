@@ -91,7 +91,7 @@ export default function LifePage() {
       setRecordEditorOpen(false); setEditingRecord(null);
       setOpenRecords((current) => new Set(current).add(recordProject.id));
       await loadRecords(recordProject.id);
-    } catch (err) { message.error(err instanceof Error ? err.message : '保存失败'); }
+    } catch (err) { message.error(err instanceof Error ? err.message : '保存失败'); throw err; }
     finally { setSaving(false); }
   };
 
@@ -129,7 +129,7 @@ export default function LifePage() {
 
     <LifeProjectEditor open={projectEditorOpen} initial={editingProject} saving={saving}
       onCancel={() => { setProjectEditorOpen(false); setEditingProject(null); }} onSubmit={saveProject} />
-    <LifeRecordEditor open={recordEditorOpen} initial={editingRecord} stages={recordProject?.stages ?? []} saving={saving}
+    <LifeRecordEditor open={recordEditorOpen} initial={editingRecord} projectId={recordProject?.id} stages={recordProject?.stages ?? []} saving={saving}
       onCancel={() => { setRecordEditorOpen(false); setEditingRecord(null); }} onSubmit={saveRecord} />
   </AuthGuard>;
 }

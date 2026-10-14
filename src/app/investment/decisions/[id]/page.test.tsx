@@ -1,0 +1,20 @@
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import { App } from 'antd';
+import { afterEach, expect, it, vi } from 'vitest';
+vi.mock('next/navigation', () => ({ useParams: () => ({ id: 'new' }), useRouter: () => ({ replace: vi.fn(), push: vi.fn() }) }));
+vi.mock('@/components/AuthSessionContext', () => ({ useAuthSession: () => ({ user, loading: false }) }));
+const user = { id: 'u1' };
+import Page from './page';
+afterEach(() => { vi.unstubAllGlobals(); localStorage.clear(); });
+it('restores and edits a draft before company data arrives, without overwriting edits afterwards', async () => {
+  window.history.replaceState(null, '', '/investment/decisions/new?research_profile_id=p1');
+  localStorage.setItem('investment-decision-draft:u1:p1:new', JSON.stringify({ final_reason: '本地草稿' }));
+  let resolve!: (value: unknown) => void;
+  const companyResponse = new Promise(r => { resolve = r; });
+  vi.stubGlobal('fetch', vi.fn((url: string) => url === '/api/investment/research' ? companyResponse : Promise.resolve({ ok: true, json: async () => [] })));
+  render(<App><Page /></App>);
+  expect(await screen.findByLabelText('核心理由')).toHaveValue('本地草稿');
+  fireEvent.change(screen.getByLabelText('核心理由'), { target: { value: '加载期间继续填写' } });
+  await act(async () => { resolve({ ok: true, json: async () => [{ id: 'p1', asset_name: '腾讯' }] }); });
+  expect(screen.getByLabelText('核心理由')).toHaveValue('加载期间继续填写');
+});

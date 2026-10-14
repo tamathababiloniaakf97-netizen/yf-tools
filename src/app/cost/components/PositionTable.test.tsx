@@ -22,7 +22,7 @@ const cryptoPosition: Position = {
   marketValue: 1500, optionPnl: 0, pnl: 100, pnlPercent: 7.14, allocPercent: 15, isNegativeCost: false,
 };
 
-function renderPositionTable(positions: Position[], onViewPendingOrders = vi.fn()) {
+function renderPositionTable(positions: Position[], onViewPendingOrders = vi.fn(), onPriceChange = vi.fn()) {
   return render(
     <App>
       <PositionTable
@@ -31,7 +31,7 @@ function renderPositionTable(positions: Position[], onViewPendingOrders = vi.fn(
         loading={false}
         onViewTransactions={vi.fn()}
         onViewPendingOrders={onViewPendingOrders}
-        onPriceChange={vi.fn()}
+        onPriceChange={onPriceChange}
         onSyncPrices={vi.fn()}
         onRefresh={vi.fn()}
         syncing={false}
@@ -42,6 +42,24 @@ function renderPositionTable(positions: Position[], onViewPendingOrders = vi.fn(
 }
 
 describe('PositionTable pending-order shortcut', () => {
+  it('edits native prices but preserves legacy storage conversion', () => {
+    const onPriceChange = vi.fn();
+    renderPositionTable([{ ...position, ticker: { ...position.ticker, currency: 'HKD', type: 'stock_hk' } }], vi.fn(), onPriceChange);
+    fireEvent.click(screen.getByText('HK$ 1,287.0000'));
+    const input = screen.getByLabelText('现价（HKD）');
+    expect(Number((input as HTMLInputElement).value)).toBe(1287);
+    fireEvent.change(input, { target: { value: '780' } });
+    fireEvent.blur(input);
+    expect(onPriceChange.mock.calls[0][0]).toBe('nvda'); expect(onPriceChange.mock.calls[0][1]).toBeCloseTo(100);
+  });
+  it('shows HKD holding values while keeping the summary in dollars', () => {
+    renderPositionTable([{ ...position, ticker: { ...position.ticker, currency: 'HKD', type: 'stock_hk' } }]);
+    expect(screen.getByText('HK$ 1,170.0000')).toBeInTheDocument();
+    expect(screen.getByText('HK$ 1,287.0000')).toBeInTheDocument();
+    expect(screen.getByText('HK$ 12,870.00')).toBeInTheDocument();
+    expect(screen.getByText('+HK$ 1,170.00')).toBeInTheDocument();
+    expect(within(screen.getByLabelText('筛选结果汇总')).getByText('US$ 1,650.00')).toBeInTheDocument();
+  });
   it('opens pending orders filtered to the holding ticker', () => {
     const onViewPendingOrders = vi.fn();
     renderPositionTable([position], onViewPendingOrders);
@@ -75,14 +93,14 @@ describe('PositionTable pending-order shortcut', () => {
     renderPositionTable([position, defensivePosition]);
     const summary = within(screen.getByLabelText('筛选结果汇总'));
     expect(summary.getByText('2 / 2')).toBeInTheDocument();
-    expect(summary.getByText('$3,450.00')).toBeInTheDocument();
-    expect(summary.getByText('+$150.00')).toBeInTheDocument();
+    expect(summary.getByText('US$ 3,450.00')).toBeInTheDocument();
+    expect(summary.getByText('+US$ 150.00')).toBeInTheDocument();
     expect(summary.getByText('+4.55%')).toBeInTheDocument();
     expect(summary.getByText('34.50%')).toBeInTheDocument();
 
     fireEvent.change(screen.getByRole('searchbox', { name: '搜索标的' }), { target: { value: '不存在' } });
     expect(summary.getByText('0 / 2')).toBeInTheDocument();
-    expect(summary.getAllByText('$0.00')).toHaveLength(2);
+    expect(summary.getAllByText('US$ 0.00')).toHaveLength(2);
     expect(summary.getByText('—')).toBeInTheDocument();
   });
 
@@ -94,14 +112,14 @@ describe('PositionTable pending-order shortcut', () => {
     fireEvent.click(screen.getByRole('checkbox', { name: '选择 比特币' }));
     expect(summary.getByText('已选汇总')).toBeInTheDocument();
     expect(summary.getByText('2 / 3')).toBeInTheDocument();
-    expect(summary.getByText('$3,150.00')).toBeInTheDocument();
-    expect(summary.getByText('+$250.00')).toBeInTheDocument();
+    expect(summary.getByText('US$ 3,150.00')).toBeInTheDocument();
+    expect(summary.getByText('+US$ 250.00')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('checkbox', { name: '选择 英伟达' }));
     fireEvent.click(screen.getByRole('checkbox', { name: '选择 比特币' }));
     expect(summary.getByText('筛选汇总')).toBeInTheDocument();
     expect(summary.getByText('3 / 3')).toBeInTheDocument();
-    expect(summary.getByText('$4,950.00')).toBeInTheDocument();
+    expect(summary.getByText('US$ 4,950.00')).toBeInTheDocument();
   });
 
   it('clears selected rows when a filter changes', () => {
